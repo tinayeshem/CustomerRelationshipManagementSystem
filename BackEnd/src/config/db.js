@@ -1,24 +1,30 @@
 import mongoose from "mongoose"; 
-import dotenv from "dotenv";
 
-dotenv.config(); // loads .env if present
 
 export async function connectDB() {
   
     const uri = process.env.MONGO_URI  // local now, cloud later
-    if (!uri) throw new Error("MONGO_URI missing");cd
+    if (!uri) throw new Error("MONGO_URI missing");
 
     //connect and test 
 
-    mongoose.connect(
+    await mongoose.connect(
         uri,
         {autoIndex: true} // good for dev; set false in prod if you prefer
     )
 
-    console.log(
-    "✅ Mongo connected",
-    { db: mongoose.connection.name, host: mongoose.connection.host }
-  );
+    
+
+    const conn = mongoose.connection;
+const dbName =
+  conn?.name || conn?.db?.databaseName || new URL(process.env.MONGO_URI).pathname.slice(1) || "(unknown)";
+const host =
+  conn?.host ||
+  conn?.client?.s?.url ||
+  (new URL(process.env.MONGO_URI).host) ||
+  "(unknown)";
+
+console.log(`✅ Mongo connected → db="${dbName}" host="${host}"`);
 
   //catch err and handle 
 
