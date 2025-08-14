@@ -1,11 +1,9 @@
-// Register all models (no exports needed)
-import "./common.js";
-import "./user.js";
-import "./teams.js";
-import "./client.js";
-import "./lrsu.js";
-import "./activity.js";
-import "./contract.js";
-import "./report.js";
-import "./notification.js";
-import "./finance.js";
+export { default as User } from "./user.js";
+export { default as Team } from "./teams.js";
+export { default as Client } from "./client.js";
+export { default as LRSU } from "./lrsu.js";
+export { default as Activity } from "./activity.js";
+export { default as Contract } from "./contract.js";
+export { default as Finance } from "./finance.js";
+export { default as Report } from "./report.js";
+export { default as Notification } from "./notification.js";
