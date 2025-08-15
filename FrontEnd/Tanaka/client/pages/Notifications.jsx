@@ -46,7 +46,7 @@ export default function NotificationsPage({ getData = getInitialData }) {
               {unreadCount}
             </span>
           </div>
-          <h1 className="text-2xl font-semibold">Notifications</h1>
+          <h1 className="text-3xl font-bold text-foreground">Notifications</h1>
         </div>
 
         {/* Right: controls */}
@@ -71,12 +71,10 @@ export default function NotificationsPage({ getData = getInitialData }) {
           </button>
 
           <button onClick={markAllRead} className="rounded-lg py-2 px-3 bg-emerald-600 text-white text-sm shadow">
-            Mark all as read
+           Submit
           </button>
 
-          <button className="rounded-lg py-2 px-3 border bg-white" title="Settings">
-            <Settings className="w-4 h-4" />
-          </button>
+        
 
           {/* Expanded filter controls on sm+ */}
           <div className="hidden sm:flex items-center gap-2">
