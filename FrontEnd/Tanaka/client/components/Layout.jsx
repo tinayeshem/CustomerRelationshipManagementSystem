@@ -11,11 +11,13 @@ import {
   Home,
   Building,
   FileText,
-  TrendingUp
+  TrendingUp,
+  Bell 
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
+  { name: "Notifications", href: "/notifications", icon:Bell  },
   { name: "Activities", href: "/activities", icon: Activity },
   { name: "Clients", href: "/clients", icon: Users },
   { name: "LRSU Database", href: "/lrsu", icon: Building },
@@ -60,7 +62,7 @@ export default function Layout({ children }) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-2 px-4 py-6">
+          <nav className="flex-1 space-y-2 px-4 py-6 text-white">
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.href;
@@ -70,9 +72,9 @@ export default function Layout({ children }) {
                   key={item.name}
                   to={item.href}
                   className={cn(
-                    "group flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 hover:shadow-lg",
+                    "group flex items-center rounded-lg px-4 py-3 text-sm  font-medium transition-all duration-200 hover:shadow-lg",
                     isActive
-                      ? "bg-sidebar-accent text-sidebar-primary-foreground shadow-lg border border-light-blue"
+                      ? "bg-sidebar-accent text-sidebar-primary-foreground shadow-lg border border-light-blue text-white"
                       : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                   )}
                 >
@@ -83,7 +85,7 @@ export default function Layout({ children }) {
                   {item.name}
                   {isActive && (
                     <div className="ml-auto">
-                      <div className="h-2 w-2 rounded-full bg-light-blue" />
+                      <div className="h-2 w-2 rounded-full bg-light-blue text-white" />
                     </div>
                   )}
                 </Link>

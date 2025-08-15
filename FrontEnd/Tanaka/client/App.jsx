@@ -15,6 +15,7 @@ import AIAdvisor from "./pages/AIAdvisor";
 import Support from "./pages/Support";
 import Sales from "./pages/Sales";
 import NotFound from "./pages/NotFound";
+import Notifications from "./pages/Notifications"
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
         <Layout>
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/notifications" element={<Notifications />} />
             <Route path="/activities" element={<Activities />} />
             <Route path="/clients" element={<Clients />} />
             <Route path="/lrsu" element={<LRSU />} />
