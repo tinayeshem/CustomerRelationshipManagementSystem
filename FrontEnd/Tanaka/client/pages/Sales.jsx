@@ -17,7 +17,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import {
   Calendar, BarChart3, Award, TrendingUp, Users, DollarSign, Target,
-  MapPin, Clock, Eye, Plus, PieChart, Activity as ActivityIcon, X, UserPlus
+  MapPin, Clock, Eye, Plus, PieChart, Activity as ActivityIcon, X, UserPlus,Medal
 } from "lucide-react";
 
 // ---------------- Seed data (unchanged) ----------------
@@ -124,6 +124,16 @@ const regionData = [
   { region: "Others", value: 45000 },
 ];
 
+// --- Team performance (mock) ---
+const teamPerformance = [
+  { name: "Ana Marić",   leads: 8, won: 3, conv: 75, avgDays: 28, activities: 45, value: 145000 },
+  { name: "Marko Petrović", leads: 6, won: 2, conv: 66, avgDays: 32, activities: 38, value:  90000 },
+  { name: "Petra Babić", leads: 4, won: 1, conv: 50, avgDays: 45, activities: 28, value:  45000 },
+  { name: "Lana Kovač",  leads: 5, won: 2, conv: 62, avgDays: 37, activities: 30, value:  52000 },
+  { name: "Ivan Horvat", leads: 3, won: 1, conv: 33, avgDays: 41, activities: 22, value:  30000 },
+];
+
+
 const teamDirectory = ["Ana Marić", "Marko Petrović", "Petra Babić", "Lana Kovač", "Ivan Horvat"];
 
 // ---------------- Helpers ----------------
@@ -193,6 +203,29 @@ const SimplePieLegend = ({ data }) => {
     </div>
   );
 };
+
+
+const medalClass = (rank) =>
+  rank === 1
+    ? "bg-yellow-100 text-yellow-800 border-yellow-200"   // gold
+    : rank === 2
+    ? "bg-gray-100 text-gray-700 border-gray-200"         // silver
+    : "bg-amber-100 text-amber-800 border-amber-200";     // bronze
+
+const MedalBadge = ({ rank }) => (
+  <Badge className={`flex items-center gap-1 ${medalClass(rank)}`}>
+    <Medal className="w-3 h-3" />
+    {rank === 1 ? "Gold" : rank === 2 ? "Silver" : "Bronze"}
+  </Badge>
+);
+
+const KP = ({ label, value }) => (
+  <div className="text-center">
+    <div className="text-xs text-gray-500">{label}</div>
+    <div className="font-medium">{value}</div>
+  </div>
+);
+
 
 // ---------------- Small editors ----------------
 function ContactsEditor({ contacts, onChange }) {
@@ -351,6 +384,31 @@ export default function Sales() {
     });
     setIsNewOpen(false);
   };
+
+//------team performance
+
+const [isTeamViewOpen, setIsTeamViewOpen] = useState(false);
+
+// derived
+const rankedTeam = useMemo(() => [...teamPerformance].sort((a,b) => b.value - a.value), []);
+const teamTotals = useMemo(() => {
+  const t = teamPerformance.reduce((s, m) => ({
+    leads: s.leads + m.leads,
+    won: s.won + m.won,
+    value: s.value + m.value,
+    activities: s.activities + m.activities,
+    convSum: s.convSum + m.conv,
+    daysSum: s.daysSum + m.avgDays,
+  }), { leads:0, won:0, value:0, activities:0, convSum:0, daysSum:0 });
+  t.avgConv = Math.round(t.convSum / teamPerformance.length);
+  t.avgDays = Math.round(t.daysSum / teamPerformance.length);
+  return t;
+}, []);
+
+
+
+
+
 
   // ------- Filters -------
   const [filters, setFilters] = useState({
@@ -626,6 +684,55 @@ export default function Sales() {
         </Card>
       </div>
 
+      {/* TEAM PERFORMANCE */}
+<Card className="border-purple-200">
+  <CardHeader  className="flex flex-row items-center justify-between space-y-0" >
+    <div 
+    className="w-full flex items-start sm:items-center justify-between gap-2">
+      <CardTitle className="flex items-left space-x- 2">
+        <Users className="h-5 w-5 text-purple-600" />
+        <span>Team Performance</span>
+      </CardTitle>
+      
+
+      <Button variant="outline" onClick={() => setIsTeamViewOpen(true)}>
+         View all
+      </Button>
+    </div>  
+      
+    
+  </CardHeader>
+
+  <CardContent className="space-y-4">
+    {rankedTeam.slice(0, 3).map((m, i) => (
+      <div key={m.name}
+            className="
+    grid items-center gap-4
+    grid-cols-1
+    md:grid-cols-[minmax(220px,1fr)_640px_max-content]  /* <-- 3 columns */
+    p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow
+      ">
+        <div className="flex items-center gap-3">
+          <div className="font-semibold text-gray-800">{m.name}</div>
+          <MedalBadge rank={i + 1} />
+        </div>
+
+        <div className="grid grid-cols-5 w-[640px] justify-items-center text-sm">
+          <KP label="Leads"       value={m.leads} />
+          <KP label="Won"         value={m.won} />
+          <KP label="Conv. Rate"  value={`${m.conv}%`} />
+          <KP label="Avg Days"    value={m.avgDays} />
+          <KP label="Activities"  value={m.activities} />
+        </div>
+
+        <span className="justify-self-end px-3 py-1 rounded-full text-xs bg-purple-100 text-purple-700">
+          {formatCurrency(m.value)}
+        </span>
+      </div>
+    ))}
+  </CardContent>
+</Card>
+
       {/* -------- FILTERS BAR -------- */}
       <Card className="border-blue-200">
         <CardHeader>
@@ -861,6 +968,81 @@ export default function Sales() {
           )}
         </DialogContent>
       </Dialog>
+
+
+      <Dialog open={isTeamViewOpen} onOpenChange={setIsTeamViewOpen}>
+  <DialogContent className="max-w-4xl">
+    <DialogHeader>
+      <DialogTitle>Team Performance — Summary</DialogTitle>
+      <DialogDescription>Overview of all users’ performance.</DialogDescription>
+    </DialogHeader>
+
+    {/* Top-3 tiles */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      {rankedTeam.slice(0, 3).map((m, i) => (
+        <div key={m.name} className="p-3 rounded-lg border">
+          <div className="flex items-center justify-between">
+            <div className="font-semibold">{m.name}</div>
+            <MedalBadge rank={i + 1} />
+          </div>
+          <div className="mt-2 text-sm space-y-1">
+            <div className="flex justify-between"><span className="text-gray-500">Won</span><span>{m.won}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Conv. Rate</span><span>{m.conv}%</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Avg Days</span><span>{m.avgDays}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Activities</span><span>{m.activities}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Revenue</span><span className="font-medium">{formatCurrency(m.value)}</span></div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Full table */}
+    <div className="mt-6 overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left text-gray-500">
+            <th className="py-2">User</th>
+            <th className="py-2">Leads</th>
+            <th className="py-2">Won</th>
+            <th className="py-2">Conv. Rate</th>
+            <th className="py-2">Avg Days</th>
+            <th className="py-2">Activities</th>
+            <th className="py-2">Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rankedTeam.map((m, i) => (
+            <tr key={m.name} className="border-t">
+              <td className="py-2 flex items-center gap-2">
+                <span className="w-6 text-xs text-gray-500">{i + 1}.</span>
+                <span className="font-medium">{m.name}</span>
+                {i < 3 && <MedalBadge rank={i + 1} />}
+              </td>
+              <td className="py-2">{m.leads}</td>
+              <td className="py-2">{m.won}</td>
+              <td className="py-2">{m.conv}%</td>
+              <td className="py-2">{m.avgDays}</td>
+              <td className="py-2">{m.activities}</td>
+              <td className="py-2">{formatCurrency(m.value)}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="border-t font-semibold">
+            <td className="py-2">Totals / Averages</td>
+            <td className="py-2">{teamTotals.leads}</td>
+            <td className="py-2">{teamTotals.won}</td>
+            <td className="py-2">{teamTotals.avgConv}%</td>
+            <td className="py-2">{teamTotals.avgDays}</td>
+            <td className="py-2">{teamTotals.activities}</td>
+            <td className="py-2">{formatCurrency(teamTotals.value)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </DialogContent>
+</Dialog>
+
     </div>
   );
 }
