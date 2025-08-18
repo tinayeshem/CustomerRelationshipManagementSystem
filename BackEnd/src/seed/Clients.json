@@ -1,0 +1,205 @@
+[
+  {
+    "id": 1,
+    "name": "Zagreb Municipality",
+    "type": "LRSU",
+    "clientType": "Municipality",
+    "contractType": "Tender",
+    "contractValue": 45000,
+    "vatAmount": 11250,
+    "contractStart": "2024-01-01",
+    "contractEnd": "2026-12-31",
+    "paymentMethod": "Monthly",
+    "paymentDeadline": "15th of month",
+    "kam": "Ana Marić",
+    "status": "Active",
+    "county": "Zagreb",
+    "address": "Trg bana Jelačića 1, Zagreb, Croatia",
+    "contactPersons": [
+      {
+        "name": "Ivan Horvat",
+        "role": "IT Manager",
+        "phone": "+385 1 234 5678",
+        "email": "ivan.horvat@zagreb.hr"
+      }
+    ],
+    "notes": "Excellent relationship. Always pays on time. Looking to expand services.",
+    "revenue": 45000,
+    "costs": 32000,
+    "profitability": 28.9,
+    "attachments": [
+      "contract_2024.pdf",
+      "service_agreement.pdf"
+    ],
+    "relatedContacts": [
+      "Split Municipality",
+      "Osijek City"
+    ],
+    "lastContact": "2024-01-10",
+    "nextPayment": "2024-01-15",
+    "contractRenewal": "2026-11-01",
+    "priority": "high"
+  },
+  {
+    "id": 2,
+    "name": "Sports Club Dinamo",
+    "type": "Club",
+    "clientType": "Sports Club",
+    "contractType": "Justification",
+    "contractValue": 12000,
+    "vatAmount": 3000,
+    "contractStart": "2024-03-01",
+    "contractEnd": "2025-02-28",
+    "paymentMethod": "Quarterly",
+    "paymentDeadline": "End of quarter",
+    "kam": "Marko Petrović",
+    "status": "Active",
+    "county": "Zagreb",
+    "address": "Maksimirska 128, Zagreb, Croatia",
+    "contactPersons": [
+      {
+        "name": "Petra Kovač",
+        "role": "Secretary",
+        "phone": "+385 1 987 6543",
+        "email": "petra@dinamo.hr"
+      }
+    ],
+    "notes": "Growing club with potential for upgrade. Good payment history.",
+    "revenue": 12000,
+    "costs": 9500,
+    "profitability": 20.8,
+    "attachments": [
+      "contract_dinamo.pdf"
+    ],
+    "relatedContacts": [
+      "HNK Hajduk",
+      "NK Osijek"
+    ],
+    "lastContact": "2024-01-08",
+    "nextPayment": "2024-03-31",
+    "contractRenewal": "2024-12-01",
+    "priority": "medium"
+  },
+  {
+    "id": 3,
+    "name": "Split City Council",
+    "type": "LRSU",
+    "clientType": "City",
+    "contractType": "Tender",
+    "contractValue": 75000,
+    "vatAmount": 18750,
+    "contractStart": "2024-06-01",
+    "contractEnd": "2027-05-31",
+    "paymentMethod": "Monthly",
+    "paymentDeadline": "30th of month",
+    "kam": "Ana Marić",
+    "status": "Potential",
+    "county": "Split-Dalmatia",
+    "address": "Peristil bb, Split, Croatia",
+    "contactPersons": [
+      {
+        "name": "Luka Milic",
+        "role": "Deputy Mayor",
+        "phone": "+385 21 555 123",
+        "email": "luka.milic@split.hr"
+      }
+    ],
+    "notes": "High-value prospect. Currently in final negotiation phase.",
+    "revenue": 0,
+    "costs": 5000,
+    "profitability": -100,
+    "attachments": [
+      "proposal_split.pdf",
+      "demo_presentation.pdf"
+    ],
+    "relatedContacts": [
+      "Rijeka Port",
+      "Zadar Municipality"
+    ],
+    "lastContact": "2024-01-12",
+    "nextPayment": null,
+    "contractRenewal": null,
+    "priority": "urgent"
+  },
+  {
+    "id": 4,
+    "name": "Tech Solutions Ltd",
+    "type": "Company",
+    "clientType": "SME",
+    "contractType": "Direct",
+    "contractValue": 25000,
+    "vatAmount": 6250,
+    "contractStart": "2023-09-01",
+    "contractEnd": "2024-08-31",
+    "paymentMethod": "Bi-annual",
+    "paymentDeadline": "March 31, September 30",
+    "kam": "Marko Petrović",
+    "status": "Expired",
+    "county": "Zagreb",
+    "address": "Ilica 242, Zagreb, Croatia",
+    "contactPersons": [
+      {
+        "name": "Stjepan Novak",
+        "role": "CEO",
+        "phone": "+385 1 444 7890",
+        "email": "stjepan@techsolutions.hr"
+      }
+    ],
+    "notes": "Contract expired. Needs renewal follow-up. Good technical partnership.",
+    "revenue": 25000,
+    "costs": 18000,
+    "profitability": 28.0,
+    "attachments": [
+      "expired_contract.pdf",
+      "renewal_proposal.pdf"
+    ],
+    "relatedContacts": [
+      "Digital Craft",
+      "Code Factory"
+    ],
+    "lastContact": "2023-12-15",
+    "nextPayment": null,
+    "contractRenewal": "2024-01-15",
+    "priority": "urgent"
+  },
+  {
+    "id": 5,
+    "name": "Crafters Association Zagreb",
+    "type": "Association",
+    "clientType": "Craftsmen",
+    "contractType": "Justification",
+    "contractValue": 8000,
+    "vatAmount": 2000,
+    "contractStart": "2024-02-01",
+    "contractEnd": "2025-01-31",
+    "paymentMethod": "Annual",
+    "paymentDeadline": "February 28",
+    "kam": "Petra Babić",
+    "status": "Active",
+    "county": "Zagreb",
+    "address": "Praška 3, Zagreb, Croatia",
+    "contactPersons": [
+      {
+        "name": "Marija Craft",
+        "role": "President",
+        "phone": "+385 1 333 2222",
+        "email": "marija@crafters-zg.hr"
+      }
+    ],
+    "notes": "Reliable small client. Potential to connect with other associations.",
+    "revenue": 8000,
+    "costs": 6200,
+    "profitability": 22.5,
+    "attachments": [
+      "association_contract.pdf"
+    ],
+    "relatedContacts": [
+      "Craftsmen Union",
+      "Trade Association"
+    ],
+    "lastContact": "2024-01-05",
+    "nextPayment": "2025-02-28",
+    "contractRenewal": "2024-11-01",
+    "priority": "low"
+  }
+]

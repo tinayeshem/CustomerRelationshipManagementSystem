@@ -7,7 +7,7 @@ const ActivityLogSchema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now }
 }, { _id: false });
 
-const ActivitySchema = new mongoose.Schema({
+export const ActivitySchema = new mongoose.Schema({
   activityType: { type: String, enum: ["Call","Email","Online Meeting","In-person Meeting"], required: true },
   category: { type: String, enum: ["Sales","Support"], required: true },
 

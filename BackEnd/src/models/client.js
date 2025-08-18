@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { AttachmentSchema as _Attachment, ContactPersonSchema as _Contact, AddressSchema as _Address } from "./common.js";
 
-const ClientSchema = new mongoose.Schema({
+export const ClientSchema = new mongoose.Schema({
   name: { type: String, required: true, index: true },
   type: String,                 // LRSU | Club | Company | Association
   clientType: String,           // Municipality | City | SME | ...

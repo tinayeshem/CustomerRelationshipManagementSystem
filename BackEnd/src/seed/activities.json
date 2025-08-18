@@ -1,0 +1,100 @@
+[
+  {
+    "activityType": "Call",
+    "category": "Support",
+    "linkedClientName": "Zagreb Municipality",
+    "clientType": "LRSU",
+    "date": "2024-01-15",
+    "time": "14:30",
+    "responsibleName": "Ana Marić",
+    "status": "Done",
+    "deadline": "2024-01-15",
+    "reminderDate": "2024-01-14",
+    "nextStep": "Follow-up call on contract renewal",
+    "nextStepDate": "2024-01-25",
+    "notes": "Resolved ticketing system issue. Client very satisfied with response time.",
+    "attachments": ["call_notes.pdf", "solution_guide.docx"],
+    "costPerActivity": 50,
+    "ticketType": "Bug",
+    "premiumSupport": true,
+    "activityLog": [
+      { "userName": "Ana Marić", "action": "Created", "timestamp": "2024-01-15T09:00:00" },
+      { "userName": "Ana Marić", "action": "Completed", "timestamp": "2024-01-15T15:00:00" }
+    ],
+    "priority": "High",
+    "isTicket": true
+  },
+  {
+    "activityType": "Email",
+    "category": "Sales",
+    "linkedClientName": "Sports Club Dinamo",
+    "clientType": "Client",
+    "date": "2024-01-15",
+    "time": "10:15",
+    "responsibleName": "Marko Petrović",
+    "status": "In Progress",
+    "deadline": "2024-01-18",
+    "reminderDate": "2024-01-17",
+    "nextStep": "Send detailed proposal with pricing",
+    "nextStepDate": "2024-01-20",
+    "notes": "Following up on contract proposal. Client interested in premium features.",
+    "attachments": ["proposal_draft.pdf"],
+    "costPerActivity": 0,
+    "ticketType": "Question",
+    "premiumSupport": false,
+    "activityLog": [
+      { "userName": "Marko Petrović", "action": "Created", "timestamp": "2024-01-15T08:30:00" },
+      { "userName": "Marko Petrović", "action": "Updated", "timestamp": "2024-01-15T11:00:00" }
+    ],
+    "priority": "Medium",
+    "isTicket": false
+  },
+  {
+    "activityType": "In-person Meeting",
+    "category": "Sales",
+    "linkedClientName": "Split City Council",
+    "clientType": "LRSU",
+    "date": "2024-01-16",
+    "time": "09:00",
+    "responsibleName": "Ana Marić",
+    "status": "To Do",
+    "deadline": "2024-01-16",
+    "reminderDate": "2024-01-15",
+    "nextStep": "Prepare technical implementation plan",
+    "nextStepDate": "2024-01-18",
+    "notes": "Demo presentation scheduled. Prepare laptop and demo environment.",
+    "attachments": ["demo_presentation.pptx", "technical_specs.pdf"],
+    "costPerActivity": 120,
+    "ticketType": "Feature",
+    "premiumSupport": false,
+    "activityLog": [
+      { "userName": "Ana Marić", "action": "Created", "timestamp": "2024-01-10T14:00:00" }
+    ],
+    "priority": "High",
+    "isTicket": false
+  },
+  {
+    "activityType": "Online Meeting",
+    "category": "Support",
+    "linkedClientName": "Tech Solutions Ltd",
+    "clientType": "Client",
+    "date": "2024-01-17",
+    "time": "15:00",
+    "responsibleName": "Petra Babić",
+    "status": "To Do",
+    "deadline": "2024-01-17",
+    "reminderDate": "2024-01-16",
+    "nextStep": "Create knowledge base article",
+    "nextStepDate": "2024-01-19",
+    "notes": "Weekly check-in meeting. Review system performance and updates.",
+    "attachments": [],
+    "costPerActivity": 25,
+    "ticketType": "Question",
+    "premiumSupport": true,
+    "activityLog": [
+      { "userName": "Petra Babić", "action": "Created", "timestamp": "2024-01-12T10:00:00" }
+    ],
+    "priority": "Medium",
+    "isTicket": true
+  }
+]

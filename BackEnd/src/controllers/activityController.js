@@ -1,11 +1,11 @@
-// BackEnd/src/controllers/clients.controller.js
-import { ClientService } from "../services/ClientService.js";
-const service = new ClientService();
+// BackEnd/src/controllers/activities.controller.js
+import { ActivityService } from "../services/ActivityService.js";
+const service = new ActivityService();
 
 export async function list(req, res) { res.json(await service.list(req.query)); }
 export async function getOne(req, res) {
   const doc = await service.get(req.params.id);
-  if (!doc) return res.status(404).json({ message: "Client not found" });
+  if (!doc) return res.status(404).json({ message: "Activity not found" });
   res.json(doc);
 }
 export async function create(req, res) {
@@ -14,7 +14,7 @@ export async function create(req, res) {
 }
 export async function update(req, res) {
   const doc = await service.update(req.params.id, req.body);
-  if (!doc) return res.status(404).json({ message: "Client not found" });
+  if (!doc) return res.status(404).json({ message: "Activity not found" });
   res.json(doc);
 }
 export async function remove(req, res) {
