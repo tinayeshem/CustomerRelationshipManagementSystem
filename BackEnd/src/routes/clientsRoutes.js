@@ -1,6 +1,6 @@
 // BackEnd/src/routes/clients.routes.js
 import { Router } from "express";
-import { list, getOne, create, update, remove } from "../controllers/clients.controller.js";
+import { list, getOne, create, update, remove } from "../controllers/clientController.js";
 const r = Router();
 r.get("/", list);           // ?q=&county=&status=&priority=&page=&limit=&sort=
 r.get("/:id", getOne);
