@@ -1,79 +1,47 @@
+import React, { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Building, Plus } from "lucide-react";
+import { toPayload } from "@/features/clients/mappers";
+import ClientFilters from "../components/clients/ClientFilters";
+import ClientCard from "../components/clients/ClientCard";
+import ClientForm from "../components/clients/ClientForm";
 
-
-
-import React, { useEffect, useMemo, useState } from "react";              // React primitives for state, memos, and effects
-import { Button } from "@/components/ui/button";                           // UI button
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"; // UI card primitives
-import { Badge } from "@/components/ui/badge";                             // Small status/label chip
-import { Input } from "@/components/ui/input";                             // Text input
-import { Label } from "@/components/ui/label";                             // Form label
-import { Textarea } from "@/components/ui/textarea";                       // Multiline input
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; // Dropdowns
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"; // Modal dialogs
-
-
-// Icons used in the UI
-import { Plus, Search, Building, MapPin, Euro, Calendar, Star, StarOff, Pencil, Trash2 } from "lucide-react";
-
-// React Query hooks — abstraction over data fetching/mutations
-// These align with SOLID by separating concerns: components call hooks,
-// hooks call the API, and the backend owns business rules.
 import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from "../features/clients/api";
 
-// Small helper: readable color classes for status badge
-const statusColor = (status) => {
-  switch (status) {
-    case "Active": return "bg-green-100 text-green-700 border-green-200";
-    case "Potential": return "bg-blue-100 text-blue-700 border-blue-200";
-    case "Expired": return "bg-red-100 text-red-700 border-red-200";
-    default: return "bg-gray-100 text-gray-700 border-gray-200";
-  }
+// static select lists
+const lists = {
+  clientTypes: ["All Types", "LRSU", "Company", "Association", "NGO", "Club"],
+  statuses: ["All Statuses", "Active", "Potential", "Expired"],
+  counties: ["All Counties", "Zagreb", "Split", "Rijeka", "Osijek"],
+  kamList: ["All KAMs", "Ana Marić", "Petra Babić", "Marko Petrović"],
 };
 
-// Component export — the page the router renders
 export default function ClientsPage() {
-  // ---------------------- Filters & sorting (UI state only) ----------------------
-  const [searchTerm, setSearchTerm] = useState("");                        // free-text search
-  const [selectedType, setSelectedType] = useState("All Types");           // e.g., Company, NGO...
-  const [selectedStatus, setSelectedStatus] = useState("All Statuses");    // Active, Potential, Expired
-  const [selectedCounty, setSelectedCounty] = useState("All Counties");    // County filter
-  const [selectedKAM, setSelectedKAM] = useState("All KAMs");              // Key account manager
-  const [sortBy, setSortBy] = useState("name");                            // sorting field
+  // ---- filters
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedType, setSelectedType] = useState("All Types");
+  const [selectedStatus, setSelectedStatus] = useState("All Statuses");
+  const [selectedCounty, setSelectedCounty] = useState("All Counties");
+  const [selectedKAM, setSelectedKAM] = useState("All KAMs");
+  const [sortBy, setSortBy] = useState("name");
 
-  // ---------------------- Dialog state ----------------------
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);           // show/hide "Add client" dialog
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);         // show/hide "Edit client" dialog
+  // ---- dialogs
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  // ---------------------- Form state (Add) ----------------------
-  // These match your Client schema fields. Keep them minimal; you can expand as needed.
+  // ---- forms
   const [formData, setFormData] = useState({
-    name: "",
-    type: "",
-    clientType: "",
-    contractType: "",
-    contractValue: "",
-    vatAmount: "",
-    contractStart: "",
-    contractEnd: "",
-    paymentMethod: "",
-    paymentDeadline: "",
-    kam: "",
-    status: "",
-    county: "",
-    address: "",
-    contactName: "",
-    contactRole: "",
-    contactPhone: "",
-    contactEmail: "",
-    notes: "",
-    relatedContacts: ""
+    name: "", type: "", clientType: "", contractType: "",
+    contractValue: "", vatAmount: "", contractStart: "", contractEnd: "",
+    paymentMethod: "", paymentDeadline: "", kam: "", status: "",
+    county: "", address: "", contactName: "", contactRole: "",
+    contactPhone: "", contactEmail: "", notes: "", relatedContacts: "",
   });
+  const [editFormData, setEditFormData] = useState({});
 
-  // ---------------------- Form state (Edit) ----------------------
-  const [editFormData, setEditFormData] = useState({});                    // will be filled when opening edit
-
-  // ---------------------- Favorites (local only) ----------------------
-  // We store favorite IDs in localStorage so it works without a server field.
+  // ---- favorites (local only)
   const [favoriteIds, setFavoriteIds] = useState(() => {
     try { return new Set(JSON.parse(localStorage.getItem("crm_fav_clients") || "[]")); }
     catch { return new Set(); }
@@ -82,36 +50,34 @@ export default function ClientsPage() {
     localStorage.setItem("crm_fav_clients", JSON.stringify(Array.from(favoriteIds)));
   }, [favoriteIds]);
 
-  // ---------------------- Server query params (memoized) ----------------------
-  // These are passed to the API. If you prefer client-side filtering only, remove them.
-  const listParams = useMemo(() => ({
-    q: searchTerm || undefined,                                           // backend text search
+  // ---- server params
+  const params = useMemo(() => ({
+    q: searchTerm || undefined,
     type: selectedType !== "All Types" ? selectedType : undefined,
     status: selectedStatus !== "All Statuses" ? selectedStatus : undefined,
     county: selectedCounty !== "All Counties" ? selectedCounty : undefined,
     kam: selectedKAM !== "All KAMs" ? selectedKAM : undefined,
-    page: 1,
-    limit: 1000,
-    sort: sortBy || "name",
+    page: 1, limit: 1000, sort: sortBy || "name",
   }), [searchTerm, selectedType, selectedStatus, selectedCounty, selectedKAM, sortBy]);
 
-  // ---------------------- React Query data hooks ----------------------
-  const { data, isLoading } = useClients(listParams);                      // fetch list { items, total, ... }
-  const createClient = useCreateClient();                                  // POST /clients
-  const updateClient = useUpdateClient();                                  // PUT /clients/:id
-  const deleteClient = useDeleteClient();                                  // DELETE /clients/:id
+  // ---- data hooks
+  const { data, isLoading, error } = useClients(params);
+  const createClient = useCreateClient();
+  const updateClient = useUpdateClient();
+  const deleteClient = useDeleteClient();
 
-  // Decorate items with local favorite flag
-  const clientList = (data?.items ?? []).map(c => ({ ...c, isFavorite: favoriteIds.has(c.id) }));
+  const clientList = (data?.items || []).map(c => ({
+    ...c, id: c.id || c._id, isFavorite: favoriteIds.has(c.id || c._id),
+  }));
 
-  // Simple guard while loading
-  if (isLoading) {
-    return <div className="p-6">Loading clients…</div>;
-  }
+  if (isLoading) return <div className="p-6">Loading clients…</div>;
+  if (error) return <div className="p-6 text-red-600">Error: {error.message}</div>;
 
-  // ---------------------- Handlers: Add / Edit / Delete / Favorite ----------------------
+  // ---- handlers
+  const onAddChange = (patch) => setFormData(prev => ({ ...prev, ...patch }));
+  const onEditChange = (patch) => setEditFormData(prev => ({ ...prev, ...patch }));
+
   const handleAddClient = async () => {
-    // Prepare API payload. Convert numbers that came as strings.
     const payload = {
       name: formData.name,
       type: formData.type,
@@ -131,57 +97,52 @@ export default function ClientsPage() {
         name: formData.contactName || "",
         role: formData.contactRole || "",
         phone: formData.contactPhone || "",
-        email: formData.contactEmail || ""
+        email: formData.contactEmail || "",
       }],
       notes: formData.notes || "",
-      relatedContacts: formData.relatedContacts
-        ? formData.relatedContacts.split(",").map(c => c.trim()).filter(Boolean)
-        : []
+      relatedContacts: formData.relatedContacts ? formData.relatedContacts.split(",").map(c => c.trim()).filter(Boolean) : [],
     };
 
-    // Call the mutation (React Query will refresh the list)
-    await createClient.mutateAsync(payload);
-
-    // Close dialog and reset form
+    try {
+    await createClient.mutateAsync(toPayload(formData));   // ⬅️ HERE
+    setIsAddDialogOpen(false);
+    // (optional) reset formData here…
+  } catch (e) {
+    console.error(e);
+    alert(e?.response?.data?.message || e.message || "Failed to create client");
+  }
     setIsAddDialogOpen(false);
     setFormData({
-      name:"", type:"", clientType:"", contractType:"", contractValue:"", vatAmount:"",
-      contractStart:"", contractEnd:"", paymentMethod:"", paymentDeadline:"", kam:"", status:"",
-      county:"", address:"", contactName:"", contactRole:"", contactPhone:"", contactEmail:"",
-      notes:"", relatedContacts:""
+      name: "", type: "", clientType: "", contractType: "",
+      contractValue: "", vatAmount: "", contractStart: "", contractEnd: "",
+      paymentMethod: "", paymentDeadline: "", kam: "", status: "",
+      county: "", address: "", contactName: "", contactRole: "",
+      contactPhone: "", contactEmail: "", notes: "", relatedContacts: "",
     });
   };
 
   const openEditDialog = (client) => {
-    // Prefill edit form from the selected client
     setEditFormData({
       id: client.id,
-      name: client.name || "",
-      type: client.type || "",
-      clientType: client.clientType || "",
-      contractType: client.contractType || "",
-      contractValue: client.contractValue ?? "",
-      vatAmount: client.vatAmount ?? "",
+      name: client.name ?? "", type: client.type ?? "", clientType: client.clientType ?? "",
+      contractType: client.contractType ?? "",
+      contractValue: client.contractValue ?? "", vatAmount: client.vatAmount ?? "",
       contractStart: client.contractStart ? client.contractStart.substring(0,10) : "",
       contractEnd: client.contractEnd ? client.contractEnd.substring(0,10) : "",
-      paymentMethod: client.paymentMethod || "",
-      paymentDeadline: client.paymentDeadline || "",
-      kam: client.kam || "",
-      status: client.status || "",
-      county: client.county || "",
+      paymentMethod: client.paymentMethod ?? "", paymentDeadline: client.paymentDeadline ?? "",
+      kam: client.kam ?? "", status: client.status ?? "", county: client.county ?? "",
       address: typeof client.address === "string" ? client.address : "",
-      contactName: client.contactPersons?.[0]?.name || "",
-      contactRole: client.contactPersons?.[0]?.role || "",
-      contactPhone: client.contactPersons?.[0]?.phone || "",
-      contactEmail: client.contactPersons?.[0]?.email || "",
-      notes: client.notes || "",
-      relatedContacts: Array.isArray(client.relatedContacts) ? client.relatedContacts.join(", ") : ""
+      contactName: client.contactPersons?.[0]?.name ?? "",
+      contactRole: client.contactPersons?.[0]?.role ?? "",
+      contactPhone: client.contactPersons?.[0]?.phone ?? "",
+      contactEmail: client.contactPersons?.[0]?.email ?? "",
+      notes: client.notes ?? "",
+      relatedContacts: Array.isArray(client.relatedContacts) ? client.relatedContacts.join(", ") : "",
     });
     setIsEditDialogOpen(true);
   };
 
   const handleUpdateClient = async () => {
-    // Extract id and build payload just like add
     const id = editFormData.id;
     const payload = {
       name: editFormData.name,
@@ -202,323 +163,105 @@ export default function ClientsPage() {
         name: editFormData.contactName || "",
         role: editFormData.contactRole || "",
         phone: editFormData.contactPhone || "",
-        email: editFormData.contactEmail || ""
+        email: editFormData.contactEmail || "",
       }],
       notes: editFormData.notes || "",
-      relatedContacts: editFormData.relatedContacts
-        ? editFormData.relatedContacts.split(",").map(c => c.trim()).filter(Boolean)
-        : []
+      relatedContacts: editFormData.relatedContacts ? editFormData.relatedContacts.split(",").map(c => c.trim()).filter(Boolean) : [],
     };
 
-    await updateClient.mutateAsync({ id, payload });
+    try {
+    await updateClient.mutateAsync({
+      id: editFormData.id,
+      payload: toPayload(editFormData),                   // ⬅️ AND HERE
+    });
+    setIsEditDialogOpen(false);
+  } catch (e) {
+    console.error(e);
+    alert(e?.response?.data?.message || e.message || "Failed to update client");
+  }
     setIsEditDialogOpen(false);
   };
 
-  const handleDeleteClient = async (id) => {
-    // Delete and let React Query refetch
-    await deleteClient.mutateAsync(id);
-  };
-
+  const handleDeleteClient = async (id) => { await deleteClient.mutateAsync(id); };
   const handleToggleFavorite = (id) => {
-    // Toggle favorite in local state + localStorage
-    setFavoriteIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+    setFavoriteIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   };
 
-  // ---------------------- Small presentational helpers ----------------------
-  const Field = ({ label, children }) => (
-    <div className="grid gap-2">
-      <Label className="text-sm text-gray-600">{label}</Label>
-      {children}
-    </div>
-  );
-
-  // ---------------------- Render ----------------------
+  // ---- render
   return (
     <div className="p-6 space-y-6">
-      {/* Page header with title, search, add button */}
+      {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Building className="h-6 w-6" />
           <h1 className="text-xl font-semibold">Clients</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            {/* Search box binds to searchTerm and updates server params */}
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              className="pl-9 w-64"
-              placeholder="Search name, notes, KAM…"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
 
-          {/* Add Client dialog trigger */}
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" /> Add Client
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[720px]">
-              <DialogHeader>
-                <DialogTitle>Add Client</DialogTitle>
-                <DialogDescription>Fill details and click save.</DialogDescription>
-              </DialogHeader>
-
-              {/* Add form grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Field label="Name">
-                  <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
-                </Field>
-                <Field label="Type">
-                  <Input value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })} />
-                </Field>
-                <Field label="Client Type">
-                  <Input value={formData.clientType} onChange={(e) => setFormData({ ...formData, clientType: e.target.value })} />
-                </Field>
-                <Field label="Status">
-                  <Input value={formData.status} onChange={(e) => setFormData({ ...formData, status: e.target.value })} />
-                </Field>
-                <Field label="County">
-                  <Input value={formData.county} onChange={(e) => setFormData({ ...formData, county: e.target.value })} />
-                </Field>
-                <Field label="KAM">
-                  <Input value={formData.kam} onChange={(e) => setFormData({ ...formData, kam: e.target.value })} />
-                </Field>
-                <Field label="Contract Type">
-                  <Input value={formData.contractType} onChange={(e) => setFormData({ ...formData, contractType: e.target.value })} />
-                </Field>
-                <Field label="Contract Value (€)">
-                  <Input type="number" value={formData.contractValue} onChange={(e) => setFormData({ ...formData, contractValue: e.target.value })} />
-                </Field>
-                <Field label="VAT Amount (€)">
-                  <Input type="number" value={formData.vatAmount} onChange={(e) => setFormData({ ...formData, vatAmount: e.target.value })} />
-                </Field>
-                <Field label="Contract Start">
-                  <Input type="date" value={formData.contractStart} onChange={(e) => setFormData({ ...formData, contractStart: e.target.value })} />
-                </Field>
-                <Field label="Contract End">
-                  <Input type="date" value={formData.contractEnd} onChange={(e) => setFormData({ ...formData, contractEnd: e.target.value })} />
-                </Field>
-                <Field label="Payment Method">
-                  <Input value={formData.paymentMethod} onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })} />
-                </Field>
-                <Field label="Payment Deadline">
-                  <Input value={formData.paymentDeadline} onChange={(e) => setFormData({ ...formData, paymentDeadline: e.target.value })} />
-                </Field>
-                <Field label="Address">
-                  <Input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} />
-                </Field>
-                <Field label="Contact (Name)">
-                  <Input value={formData.contactName} onChange={(e) => setFormData({ ...formData, contactName: e.target.value })} />
-                </Field>
-                <Field label="Contact (Role)">
-                  <Input value={formData.contactRole} onChange={(e) => setFormData({ ...formData, contactRole: e.target.value })} />
-                </Field>
-                <Field label="Contact (Phone)">
-                  <Input value={formData.contactPhone} onChange={(e) => setFormData({ ...formData, contactPhone: e.target.value })} />
-                </Field>
-                <Field label="Contact (Email)">
-                  <Input type="email" value={formData.contactEmail} onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })} />
-                </Field>
-                <div className="md:col-span-2">
-                  <Field label="Notes">
-                    <Textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} />
-                  </Field>
-                </div>
-                <Field label="Related Contacts (comma-separated)">
-                  <Input value={formData.relatedContacts} onChange={(e) => setFormData({ ...formData, relatedContacts: e.target.value })} />
-                </Field>
-              </div>
-
-              <DialogFooter className="gap-2">
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleAddClient}>Save</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
+        {/* Add Client */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild><Button className="gap-2"><Plus className="h-4 w-4" /> Add Client</Button></DialogTrigger>
+          <DialogContent className="sm:max-w-[900px] p-0">
+            <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b p-4">
+              <DialogTitle>Add Client</DialogTitle>
+              <DialogDescription>Fill details and click save.</DialogDescription>
+            </DialogHeader>
+            <div className="max-h-[70vh] overflow-y-auto p-4">
+              <ClientForm value={formData} onChange={(patch) => onAddChange(patch)} />
+            </div>
+            <DialogFooter className="sticky bottom-0 z-10 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-t p-4">
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
+              <Button onClick={handleAddClient}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      {/* Filters row (you can replace Inputs with Selects if you have predefined lists) */}
+      {/* Filters */}
       <Card>
-        <CardContent className="py-4">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <div>
-              <Label>Type</Label>
-              <Input value={selectedType} onChange={(e) => setSelectedType(e.target.value)} placeholder="All Types" />
-            </div>
-            <div>
-              <Label>Status</Label>
-              <Input value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)} placeholder="All Statuses" />
-            </div>
-            <div>
-              <Label>County</Label>
-              <Input value={selectedCounty} onChange={(e) => setSelectedCounty(e.target.value)} placeholder="All Counties" />
-            </div>
-            <div>
-              <Label>KAM</Label>
-              <Input value={selectedKAM} onChange={(e) => setSelectedKAM(e.target.value)} placeholder="All KAMs" />
-            </div>
-            <div>
-              <Label>Sort By</Label>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger><SelectValue placeholder="Sort" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="name">Name</SelectItem>
-                  <SelectItem value="-createdAt">Newest</SelectItem>
-                  <SelectItem value="createdAt">Oldest</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Advanced Client Filters</CardTitle>
+          <div className="text-sm text-gray-500">Filter and analyze your client portfolio</div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <ClientFilters
+            searchTerm={searchTerm} setSearchTerm={setSearchTerm}
+            selectedType={selectedType} setSelectedType={setSelectedType}
+            selectedStatus={selectedStatus} setSelectedStatus={setSelectedStatus}
+            selectedCounty={selectedCounty} setSelectedCounty={setSelectedCounty}
+            selectedKAM={selectedKAM} setSelectedKAM={setSelectedKAM}
+            sortBy={sortBy} setSortBy={setSortBy}
+            lists={lists}
+          />
+          <div className="flex items-center justify-between mt-3">
+            <div className="text-sm text-gray-500">Found {clientList.length} clients</div>
           </div>
         </CardContent>
       </Card>
 
-      {/* List of clients */}
+      {/* Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {clientList.map(client => (
-          <Card key={client.id} className="relative">
-            <CardHeader className="space-y-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{client.name || "Untitled client"}</CardTitle>
-                {/* Favorite toggle — local only */}
-                <Button variant="ghost" size="icon" onClick={() => handleToggleFavorite(client.id)} title={client.isFavorite ? "Remove favorite" : "Add favorite"}>
-                  {client.isFavorite ? <Star className="h-5 w-5 text-yellow-500" /> : <StarOff className="h-5 w-5 text-gray-400" />}
-                </Button>
-              </div>
-              {/* Status badge */}
-              <div className="flex gap-2">
-                <Badge className={`border ${statusColor(client.status)}`}>{client.status || "Unknown"}</Badge>
-                {client.type ? <Badge variant="outline">{client.type}</Badge> : null}
-                {client.clientType ? <Badge variant="outline">{client.clientType}</Badge> : null}
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-3">
-              {/* Simple info line */}
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <MapPin className="h-4 w-4" />
-                <span>{client.county || "No county"}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Building className="h-4 w-4" />
-                <span>{client.kam || "No KAM"}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Euro className="h-4 w-4" />
-                <span>Contract: €{Number(client.contractValue || 0).toLocaleString()}</span>
-              </div>
-              {client.contractStart || client.contractEnd ? (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Calendar className="h-4 w-4" />
-                  <span>
-                    {client.contractStart ? `Start: ${new Date(client.contractStart).toLocaleDateString()}` : "Start: -"}
-                    {"  ·  "}
-                    {client.contractEnd ? `End: ${new Date(client.contractEnd).toLocaleDateString()}` : "End: -"}
-                  </span>
-                </div>
-              ) : null}
-
-              <Separator />
-
-              {/* Actions */}
-              <div className="flex items-center justify-between">
-                <div className="text-xs text-gray-500">{client.address || "No address"}</div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => openEditDialog(client)} className="gap-1">
-                    <Pencil className="h-4 w-4" /> Edit
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => handleDeleteClient(client.id)} className="gap-1">
-                    <Trash2 className="h-4 w-4" /> Delete
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {clientList.map((c) => (
+          <ClientCard
+            key={c.id}
+            client={c}
+            onEdit={openEditDialog}
+            onDelete={handleDeleteClient}
+            onToggleFavorite={handleToggleFavorite}
+          />
         ))}
       </div>
 
       {/* Edit dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[720px]">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[900px] p-0">
+          <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b p-4">
             <DialogTitle>Edit Client</DialogTitle>
             <DialogDescription>Update details and save.</DialogDescription>
           </DialogHeader>
-
-          {/* Edit form grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Name">
-              <Input value={editFormData.name || ""} onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })} />
-            </Field>
-            <Field label="Type">
-              <Input value={editFormData.type || ""} onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })} />
-            </Field>
-            <Field label="Client Type">
-              <Input value={editFormData.clientType || ""} onChange={(e) => setEditFormData({ ...editFormData, clientType: e.target.value })} />
-            </Field>
-            <Field label="Status">
-              <Input value={editFormData.status || ""} onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })} />
-            </Field>
-            <Field label="County">
-              <Input value={editFormData.county || ""} onChange={(e) => setEditFormData({ ...editFormData, county: e.target.value })} />
-            </Field>
-            <Field label="KAM">
-              <Input value={editFormData.kam || ""} onChange={(e) => setEditFormData({ ...editFormData, kam: e.target.value })} />
-            </Field>
-            <Field label="Contract Type">
-              <Input value={editFormData.contractType || ""} onChange={(e) => setEditFormData({ ...editFormData, contractType: e.target.value })} />
-            </Field>
-            <Field label="Contract Value (€)">
-              <Input type="number" value={editFormData.contractValue ?? ""} onChange={(e) => setEditFormData({ ...editFormData, contractValue: e.target.value })} />
-            </Field>
-            <Field label="VAT Amount (€)">
-              <Input type="number" value={editFormData.vatAmount ?? ""} onChange={(e) => setEditFormData({ ...editFormData, vatAmount: e.target.value })} />
-            </Field>
-            <Field label="Contract Start">
-              <Input type="date" value={editFormData.contractStart || ""} onChange={(e) => setEditFormData({ ...editFormData, contractStart: e.target.value })} />
-            </Field>
-            <Field label="Contract End">
-              <Input type="date" value={editFormData.contractEnd || ""} onChange={(e) => setEditFormData({ ...editFormData, contractEnd: e.target.value })} />
-            </Field>
-            <Field label="Payment Method">
-              <Input value={editFormData.paymentMethod || ""} onChange={(e) => setEditFormData({ ...editFormData, paymentMethod: e.target.value })} />
-            </Field>
-            <Field label="Payment Deadline">
-              <Input value={editFormData.paymentDeadline || ""} onChange={(e) => setEditFormData({ ...editFormData, paymentDeadline: e.target.value })} />
-            </Field>
-            <Field label="Address">
-              <Input value={editFormData.address || ""} onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })} />
-            </Field>
-            <Field label="Contact (Name)">
-              <Input value={editFormData.contactName || ""} onChange={(e) => setEditFormData({ ...editFormData, contactName: e.target.value })} />
-            </Field>
-            <Field label="Contact (Role)">
-              <Input value={editFormData.contactRole || ""} onChange={(e) => setEditFormData({ ...editFormData, contactRole: e.target.value })} />
-            </Field>
-            <Field label="Contact (Phone)">
-              <Input value={editFormData.contactPhone || ""} onChange={(e) => setEditFormData({ ...editFormData, contactPhone: e.target.value })} />
-            </Field>
-            <Field label="Contact (Email)">
-              <Input type="email" value={editFormData.contactEmail || ""} onChange={(e) => setEditFormData({ ...editFormData, contactEmail: e.target.value })} />
-            </Field>
-            <div className="md:col-span-2">
-              <Field label="Notes">
-                <Textarea value={editFormData.notes || ""} onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })} />
-              </Field>
-            </div>
-            <Field label="Related Contacts (comma-separated)">
-              <Input value={editFormData.relatedContacts || ""} onChange={(e) => setEditFormData({ ...editFormData, relatedContacts: e.target.value })} />
-            </Field>
+          <div className="max-h-[70vh] overflow-y-auto p-4">
+            <ClientForm value={editFormData} onChange={(patch) => onEditChange(patch)} />
           </div>
-
-          <DialogFooter className="gap-2">
+          <DialogFooter className="sticky bottom-0 z-10 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-t p-4">
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
             <Button onClick={handleUpdateClient}>Save changes</Button>
           </DialogFooter>

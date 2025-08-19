@@ -17,10 +17,10 @@ import Sales from "./pages/Sales";
 import NotFound from "./pages/NotFound";
 import Notifications from "./pages/Notifications"
 
-const queryClient = new QueryClient();
+const qc = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  
     <TooltipProvider>
       <BrowserRouter>
         <Layout>
@@ -40,7 +40,15 @@ const App = () => (
         </Layout>
       </BrowserRouter>
     </TooltipProvider>
-  </QueryClientProvider>
+
 );
 
-createRoot(document.getElementById("root")).render(<App />);
+createRoot(document.getElementById("root")).render(
+
+     <React.StrictMode>
+    <QueryClientProvider client={qc}>
+      <App />
+    </QueryClientProvider>
+  </React.StrictMode>
+
+);
