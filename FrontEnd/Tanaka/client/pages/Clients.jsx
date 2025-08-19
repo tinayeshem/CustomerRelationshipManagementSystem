@@ -273,6 +273,7 @@ export default function Clients() {
   const [selectedValue, setSelectedValue] = useState("All Values");
   const [selectedHealth, setSelectedHealth] = useState("All Health");
   const [selectedKAM, setSelectedKAM] = useState("All KAMs");
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [sortBy, setSortBy] = useState("name");
   const [selectedClient, setSelectedClient] = useState(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -340,9 +341,10 @@ export default function Clients() {
     const matchesValue = selectedValue === "All Values" || matchesContractValue(client.contractValue, selectedValue);
     const matchesHealth = selectedHealth === "All Health" || matchesFinancialHealth(client.profitability, selectedHealth);
     const matchesKAM = selectedKAM === "All KAMs" || client.kam === selectedKAM;
+    const matchesFavorites = !showFavoritesOnly || client.isFavorite;
 
-    return matchesSearch && matchesType && matchesContract && matchesStatus && 
-           matchesCounty && matchesValue && matchesHealth && matchesKAM;
+    return matchesSearch && matchesType && matchesContract && matchesStatus &&
+           matchesCounty && matchesValue && matchesHealth && matchesKAM && matchesFavorites;
   });
 
   const sortedData = [...filteredData].sort((a, b) => {
@@ -484,6 +486,19 @@ export default function Clients() {
     window.open(googleMapsUrl, '_blank');
   };
 
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setSelectedType("All Types");
+    setSelectedContract("All Contracts");
+    setSelectedStatus("All Statuses");
+    setSelectedCounty("All Counties");
+    setSelectedValue("All Values");
+    setSelectedHealth("All Health");
+    setSelectedKAM("All KAMs");
+    setShowFavoritesOnly(false);
+    setSortBy("name");
+  };
+
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
       {/* Header */}
@@ -574,19 +589,46 @@ export default function Clients() {
             </Select>
           </div>
 
+          {/* Favorites Filter and Reset Button */}
+          <div className="flex items-center justify-between pt-4 border-t border-blue-100">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="showFavoritesOnly"
+                  checked={showFavoritesOnly}
+                  onChange={(e) => setShowFavoritesOnly(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 border-blue-300 rounded focus:ring-blue-500"
+                />
+                <Label htmlFor="showFavoritesOnly" className="text-sm font-medium text-blue-700 flex items-center space-x-1">
+                  <Star className="h-4 w-4 text-yellow-500" />
+                  <span>Show Favorites Only</span>
+                </Label>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleResetFilters}
+              className="border-blue-200 text-blue-600 hover:bg-blue-50"
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Reset All Filters
+            </Button>
+          </div>
+
           {/* Results and Actions */}
           <div className="flex items-center justify-between">
             <p className="text-sm text-blue-600">
               Found {sortedData.length} client{sortedData.length !== 1 ? 's' : ''}
             </p>
             <div className="flex space-x-2">
-              <Button variant="outline" className="border-blue-200 text-dark-blue hover:bg-light-blue">
+              <Button variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50">
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button className="bg-dark-blue hover:bg-dark-blue-hover text-white">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Client
                   </Button>
