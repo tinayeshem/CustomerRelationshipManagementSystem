@@ -1,12 +1,32 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Plus,
   Search,
@@ -31,7 +51,8 @@ import {
   Edit,
   Eye,
   Upload,
-  MapPin
+  MapPin,
+  RotateCcw,
 } from "lucide-react";
 
 // Enhanced activities data with all requested fields
@@ -46,73 +67,123 @@ const clientAddresses = {
   "Pula Municipality": "Forum 3, Pula, Croatia",
   "Dubrovnik Tourism Board": "Stradun 1, Dubrovnik, Croatia",
   "Karlovac County": "Petra Zrinskog 1, Karlovac, Croatia",
-  "Zadar Port Authority": "Liburnska obala 6, Zadar, Croatia"
+  "Zadar Port Authority": "Liburnska obala 6, Zadar, Croatia",
 };
 
 // Enhanced filter and reference data
-const activityTypes = ["All Types", "Call", "Email", "Online Meeting", "In-person Meeting"];
+const activityTypes = [
+  "All Types",
+  "Call",
+  "Email",
+  "Online Meeting",
+  "In-person Meeting",
+];
 const categories = ["All Categories", "Sales", "Support"];
 const statuses = ["All Statuses", "To Do", "In Progress", "Done"];
-const ticketTypes = ["All Ticket Types", "Bug", "Question", "Feature", "Enhancement"];
-const teamMembers = ["All Members", "Ana Marić", "Marko Petrović", "Petra Babić"];
+const ticketTypes = [
+  "All Ticket Types",
+  "Bug",
+  "Question",
+  "Feature",
+  "Enhancement",
+];
+const teamMembers = [
+  "All Members",
+  "Ana Marić",
+  "Marko Petrović",
+  "Petra Babić",
+];
 const priorities = ["All Priorities", "Low", "Medium", "High", "Urgent"];
-const clients = ["All Clients", "Zagreb Municipality", "Sports Club Dinamo", "Split City Council", "Tech Solutions Ltd"];
+const clients = [
+  "All Clients",
+  "Zagreb Municipality",
+  "Sports Club Dinamo",
+  "Split City Council",
+  "Tech Solutions Ltd",
+];
 const ticketFilters = ["All", "Tasks Only", "Tickets Only"];
 
 const getStatusColor = (status) => {
   switch (status) {
-    case "Done": return "bg-green-100 text-green-800 border-green-200";
-    case "In Progress": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "To Do": return "bg-blue-100 text-blue-800 border-blue-200";
-    default: return "bg-gray-100 text-gray-800 border-gray-200";
+    case "Done":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "In Progress":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "To Do":
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
 
 const getPriorityColor = (priority) => {
   switch (priority) {
-    case "Urgent": return "bg-red-100 text-red-800 border-red-200";
-    case "High": return "bg-orange-100 text-orange-800 border-orange-200";
-    case "Medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "Low": return "bg-green-100 text-green-800 border-green-200";
-    default: return "bg-gray-100 text-gray-800 border-gray-200";
+    case "Urgent":
+      return "bg-red-100 text-red-800 border-red-200";
+    case "High":
+      return "bg-orange-100 text-orange-800 border-orange-200";
+    case "Medium":
+      return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "Low":
+      return "bg-green-100 text-green-800 border-green-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
 
 const getCategoryColor = (category) => {
   switch (category) {
-    case "Sales": return "bg-blue-100 text-blue-800 border-blue-200";
-    case "Support": return "bg-purple-100 text-purple-800 border-purple-200";
-    default: return "bg-gray-100 text-gray-800 border-gray-200";
+    case "Sales":
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    case "Support":
+      return "bg-purple-100 text-purple-800 border-purple-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
 
 const getTicketTypeColor = (ticketType) => {
   switch (ticketType) {
-    case "Bug": return "bg-red-100 text-red-800 border-red-200";
-    case "Question": return "bg-blue-100 text-blue-800 border-blue-200";
-    case "Feature": return "bg-green-100 text-green-800 border-green-200";
-    case "Enhancement": return "bg-purple-100 text-purple-800 border-purple-200";
-    default: return "bg-gray-100 text-gray-800 border-gray-200";
+    case "Bug":
+      return "bg-red-100 text-red-800 border-red-200";
+    case "Question":
+      return "bg-blue-100 text-blue-800 border-blue-200";
+    case "Feature":
+      return "bg-green-100 text-green-800 border-green-200";
+    case "Enhancement":
+      return "bg-purple-100 text-purple-800 border-purple-200";
+    default:
+      return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
 
 const getActivityTypeIcon = (type) => {
   switch (type) {
-    case "Call": return <Phone className="h-4 w-4" />;
-    case "Email": return <Mail className="h-4 w-4" />;
-    case "Online Meeting": return <Video className="h-4 w-4" />;
-    case "In-person Meeting": return <Users className="h-4 w-4" />;
-    default: return <User className="h-4 w-4" />;
+    case "Call":
+      return <Phone className="h-4 w-4" />;
+    case "Email":
+      return <Mail className="h-4 w-4" />;
+    case "Online Meeting":
+      return <Video className="h-4 w-4" />;
+    case "In-person Meeting":
+      return <Users className="h-4 w-4" />;
+    default:
+      return <User className="h-4 w-4" />;
   }
 };
 
 const getTicketTypeIcon = (type) => {
   switch (type) {
-    case "Bug": return <Bug className="h-3 w-3" />;
-    case "Question": return <HelpCircle className="h-3 w-3" />;
-    case "Feature": return <Star className="h-3 w-3" />;
-    case "Enhancement": return <Zap className="h-3 w-3" />;
-    default: return <FileText className="h-3 w-3" />;
+    case "Bug":
+      return <Bug className="h-3 w-3" />;
+    case "Question":
+      return <HelpCircle className="h-3 w-3" />;
+    case "Feature":
+      return <Star className="h-3 w-3" />;
+    case "Enhancement":
+      return <Zap className="h-3 w-3" />;
+    default:
+      return <FileText className="h-3 w-3" />;
   }
 };
 
@@ -128,11 +199,14 @@ export default function Activities() {
   const [selectedType, setSelectedType] = useState("All Types");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [selectedStatus, setSelectedStatus] = useState("All Statuses");
-  const [selectedTicketType, setSelectedTicketType] = useState("All Ticket Types");
+  const [selectedTicketType, setSelectedTicketType] =
+    useState("All Ticket Types");
   const [selectedMember, setSelectedMember] = useState("All Members");
   const [selectedPriority, setSelectedPriority] = useState("All Priorities");
   const [selectedClient, setSelectedClient] = useState("All Clients");
   const [selectedTicketFilter, setSelectedTicketFilter] = useState("All");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
 
   // Form state for new activity
   const [newActivity, setNewActivity] = useState({
@@ -154,7 +228,7 @@ export default function Activities() {
     ticketType: "Question",
     premiumSupport: false,
     priority: "Medium",
-    isTicket: false
+    isTicket: false,
   });
 
   // Edit form state
@@ -178,38 +252,73 @@ export default function Activities() {
     ticketType: "",
     premiumSupport: false,
     priority: "",
-    isTicket: false
+    isTicket: false,
   });
 
   // Filtered activities
   const filteredActivities = activitiesList.filter((activity) => {
-    const matchesSearch = activity.linkedClient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         activity.responsible.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         activity.notes.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = selectedType === "All Types" || activity.activityType === selectedType;
-    const matchesCategory = selectedCategory === "All Categories" || activity.category === selectedCategory;
-    const matchesStatus = selectedStatus === "All Statuses" || activity.status === selectedStatus;
-    const matchesTicketType = selectedTicketType === "All Ticket Types" || activity.ticketType === selectedTicketType;
-    const matchesMember = selectedMember === "All Members" || activity.responsible === selectedMember;
-    const matchesPriority = selectedPriority === "All Priorities" || activity.priority === selectedPriority;
-    const matchesClient = selectedClient === "All Clients" || activity.linkedClient === selectedClient;
-    const matchesTicketFilter = selectedTicketFilter === "All" || 
-                                (selectedTicketFilter === "Tasks Only" && !activity.isTicket) ||
-                                (selectedTicketFilter === "Tickets Only" && activity.isTicket);
+    const matchesSearch =
+      activity.linkedClient.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.responsible.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.notes.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType =
+      selectedType === "All Types" || activity.activityType === selectedType;
+    const matchesCategory =
+      selectedCategory === "All Categories" ||
+      activity.category === selectedCategory;
+    const matchesStatus =
+      selectedStatus === "All Statuses" || activity.status === selectedStatus;
+    const matchesTicketType =
+      selectedTicketType === "All Ticket Types" ||
+      activity.ticketType === selectedTicketType;
+    const matchesMember =
+      selectedMember === "All Members" ||
+      activity.responsible === selectedMember;
+    const matchesPriority =
+      selectedPriority === "All Priorities" ||
+      activity.priority === selectedPriority;
+    const matchesClient =
+      selectedClient === "All Clients" ||
+      activity.linkedClient === selectedClient;
+    const matchesTicketFilter =
+      selectedTicketFilter === "All" ||
+      (selectedTicketFilter === "Tasks Only" && !activity.isTicket) ||
+      (selectedTicketFilter === "Tickets Only" && activity.isTicket);
 
-    return matchesSearch && matchesType && matchesCategory && matchesStatus && 
-           matchesTicketType && matchesMember && matchesPriority && matchesClient && matchesTicketFilter;
+    // Date range filtering
+    const activityDate = new Date(activity.date);
+    const matchesFromDate = !fromDate || activityDate >= new Date(fromDate);
+    const matchesToDate = !toDate || activityDate <= new Date(toDate);
+    const matchesDateRange = matchesFromDate && matchesToDate;
+
+    return (
+      matchesSearch &&
+      matchesType &&
+      matchesCategory &&
+      matchesStatus &&
+      matchesTicketType &&
+      matchesMember &&
+      matchesPriority &&
+      matchesClient &&
+      matchesTicketFilter &&
+      matchesDateRange
+    );
   });
 
   const handleInputChange = (field, value) => {
-    setNewActivity(prev => ({
+    setNewActivity((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleAddActivity = () => {
-    if (!newActivity.activityType || !newActivity.linkedClient || !newActivity.date || !newActivity.time) {
+    if (
+      !newActivity.activityType ||
+      !newActivity.linkedClient ||
+      !newActivity.date ||
+      !newActivity.time
+    ) {
       alert("Please fill in all required fields");
       return;
     }
@@ -219,11 +328,15 @@ export default function Activities() {
       ...newActivity,
       costPerActivity: parseFloat(newActivity.costPerActivity) || 0,
       activityLog: [
-        { user: newActivity.responsible, action: "Created", timestamp: new Date().toLocaleString() }
-      ]
+        {
+          user: newActivity.responsible,
+          action: "Created",
+          timestamp: new Date().toLocaleString(),
+        },
+      ],
     };
 
-    setActivitiesList(prev => [activity, ...prev]);
+    setActivitiesList((prev) => [activity, ...prev]);
     setNewActivity({
       activityType: "",
       category: "Support",
@@ -243,7 +356,7 @@ export default function Activities() {
       ticketType: "Question",
       premiumSupport: false,
       priority: "Medium",
-      isTicket: false
+      isTicket: false,
     });
     setIsDialogOpen(false);
   };
@@ -258,7 +371,7 @@ export default function Activities() {
     if (address) {
       const encodedAddress = encodeURIComponent(address);
       const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-      window.open(googleMapsUrl, '_blank');
+      window.open(googleMapsUrl, "_blank");
     } else {
       alert("Address not available for this client");
     }
@@ -285,20 +398,25 @@ export default function Activities() {
       ticketType: activity.ticketType,
       premiumSupport: activity.premiumSupport,
       priority: activity.priority,
-      isTicket: activity.isTicket
+      isTicket: activity.isTicket,
     });
     setIsEditDialogOpen(true);
   };
 
   const handleEditInputChange = (field, value) => {
-    setEditActivity(prev => ({
+    setEditActivity((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleUpdateActivity = () => {
-    if (!editActivity.activityType || !editActivity.linkedClient || !editActivity.date || !editActivity.time) {
+    if (
+      !editActivity.activityType ||
+      !editActivity.linkedClient ||
+      !editActivity.date ||
+      !editActivity.time
+    ) {
       alert("Please fill in all required fields");
       return;
     }
@@ -307,17 +425,38 @@ export default function Activities() {
       ...editActivity,
       costPerActivity: parseFloat(editActivity.costPerActivity) || 0,
       activityLog: [
-        ...activitiesList.find(a => a.id === editActivity.id)?.activityLog || [],
-        { user: editActivity.responsible, action: "Updated", timestamp: new Date().toLocaleString() }
-      ]
+        ...(activitiesList.find((a) => a.id === editActivity.id)?.activityLog ||
+          []),
+        {
+          user: editActivity.responsible,
+          action: "Updated",
+          timestamp: new Date().toLocaleString(),
+        },
+      ],
     };
 
-    setActivitiesList(prev => prev.map(activity =>
-      activity.id === editActivity.id ? updatedActivity : activity
-    ));
+    setActivitiesList((prev) =>
+      prev.map((activity) =>
+        activity.id === editActivity.id ? updatedActivity : activity,
+      ),
+    );
 
     setIsEditDialogOpen(false);
     setIsViewDialogOpen(false); // Close view dialog too
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setSelectedType("All Types");
+    setSelectedCategory("All Categories");
+    setSelectedStatus("All Statuses");
+    setSelectedTicketType("All Ticket Types");
+    setSelectedMember("All Members");
+    setSelectedPriority("All Priorities");
+    setSelectedClient("All Clients");
+    setSelectedTicketFilter("All");
+    setFromDate("");
+    setToDate("");
   };
 
   return (
@@ -325,7 +464,9 @@ export default function Activities() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Activities & Tickets</h1>
+          <h1 className="text-3xl font-bold text-foreground">
+            Activities & Tickets
+          </h1>
           <p className="text-muted-foreground mt-1">
             Comprehensive activity tracking and ticket management system
           </p>
@@ -341,7 +482,8 @@ export default function Activities() {
             <DialogHeader>
               <DialogTitle>Create New Activity/Ticket</DialogTitle>
               <DialogDescription>
-                Add a comprehensive activity or support ticket with full tracking capabilities.
+                Add a comprehensive activity or support ticket with full
+                tracking capabilities.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-6 py-4">
@@ -349,21 +491,35 @@ export default function Activities() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="activityType">Activity Type *</Label>
-                  <Select value={newActivity.activityType} onValueChange={(value) => handleInputChange('activityType', value)}>
+                  <Select
+                    value={newActivity.activityType}
+                    onValueChange={(value) =>
+                      handleInputChange("activityType", value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select activity type" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Call">Call</SelectItem>
                       <SelectItem value="Email">Email</SelectItem>
-                      <SelectItem value="Online Meeting">Online Meeting</SelectItem>
-                      <SelectItem value="In-person Meeting">In-person Meeting</SelectItem>
+                      <SelectItem value="Online Meeting">
+                        Online Meeting
+                      </SelectItem>
+                      <SelectItem value="In-person Meeting">
+                        In-person Meeting
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="category">Category *</Label>
-                  <Select value={newActivity.category} onValueChange={(value) => handleInputChange('category', value)}>
+                  <Select
+                    value={newActivity.category}
+                    onValueChange={(value) =>
+                      handleInputChange("category", value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
@@ -383,12 +539,19 @@ export default function Activities() {
                     id="linkedClient"
                     placeholder="Enter client name"
                     value={newActivity.linkedClient}
-                    onChange={(e) => handleInputChange('linkedClient', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("linkedClient", e.target.value)
+                    }
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="clientType">Client Type</Label>
-                  <Select value={newActivity.clientType} onValueChange={(value) => handleInputChange('clientType', value)}>
+                  <Select
+                    value={newActivity.clientType}
+                    onValueChange={(value) =>
+                      handleInputChange("clientType", value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select client type" />
                     </SelectTrigger>
@@ -408,7 +571,7 @@ export default function Activities() {
                     id="date"
                     type="date"
                     value={newActivity.date}
-                    onChange={(e) => handleInputChange('date', e.target.value)}
+                    onChange={(e) => handleInputChange("date", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
@@ -417,18 +580,25 @@ export default function Activities() {
                     id="time"
                     type="time"
                     value={newActivity.time}
-                    onChange={(e) => handleInputChange('time', e.target.value)}
+                    onChange={(e) => handleInputChange("time", e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="responsible">Responsible *</Label>
-                  <Select value={newActivity.responsible} onValueChange={(value) => handleInputChange('responsible', value)}>
+                  <Select
+                    value={newActivity.responsible}
+                    onValueChange={(value) =>
+                      handleInputChange("responsible", value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select team member" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Ana Marić">Ana Marić</SelectItem>
-                      <SelectItem value="Marko Petrović">Marko Petrović</SelectItem>
+                      <SelectItem value="Marko Petrović">
+                        Marko Petrović
+                      </SelectItem>
                       <SelectItem value="Petra Babić">Petra Babić</SelectItem>
                     </SelectContent>
                   </Select>
@@ -439,7 +609,12 @@ export default function Activities() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="status">Status</Label>
-                  <Select value={newActivity.status} onValueChange={(value) => handleInputChange('status', value)}>
+                  <Select
+                    value={newActivity.status}
+                    onValueChange={(value) =>
+                      handleInputChange("status", value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
@@ -452,7 +627,12 @@ export default function Activities() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="priority">Priority</Label>
-                  <Select value={newActivity.priority} onValueChange={(value) => handleInputChange('priority', value)}>
+                  <Select
+                    value={newActivity.priority}
+                    onValueChange={(value) =>
+                      handleInputChange("priority", value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select priority" />
                     </SelectTrigger>
@@ -470,7 +650,9 @@ export default function Activities() {
                     id="deadline"
                     type="date"
                     value={newActivity.deadline}
-                    onChange={(e) => handleInputChange('deadline', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("deadline", e.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -483,7 +665,9 @@ export default function Activities() {
                     id="reminderDate"
                     type="date"
                     value={newActivity.reminderDate}
-                    onChange={(e) => handleInputChange('reminderDate', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("reminderDate", e.target.value)
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -492,7 +676,9 @@ export default function Activities() {
                     id="nextStepDate"
                     type="date"
                     value={newActivity.nextStepDate}
-                    onChange={(e) => handleInputChange('nextStepDate', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("nextStepDate", e.target.value)
+                    }
                   />
                 </div>
               </div>
@@ -504,7 +690,9 @@ export default function Activities() {
                   id="nextStep"
                   placeholder="Describe the next action to be taken"
                   value={newActivity.nextStep}
-                  onChange={(e) => handleInputChange('nextStep', e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("nextStep", e.target.value)
+                  }
                 />
               </div>
 
@@ -512,7 +700,12 @@ export default function Activities() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="ticketType">Ticket Type</Label>
-                  <Select value={newActivity.ticketType} onValueChange={(value) => handleInputChange('ticketType', value)}>
+                  <Select
+                    value={newActivity.ticketType}
+                    onValueChange={(value) =>
+                      handleInputChange("ticketType", value)
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select ticket type" />
                     </SelectTrigger>
@@ -531,7 +724,9 @@ export default function Activities() {
                     type="number"
                     placeholder="0"
                     value={newActivity.costPerActivity}
-                    onChange={(e) => handleInputChange('costPerActivity', e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("costPerActivity", e.target.value)
+                    }
                   />
                 </div>
                 <div className="space-y-2 flex items-center gap-4 pt-6">
@@ -540,7 +735,9 @@ export default function Activities() {
                       type="checkbox"
                       id="isTicket"
                       checked={newActivity.isTicket}
-                      onChange={(e) => handleInputChange('isTicket', e.target.checked)}
+                      onChange={(e) =>
+                        handleInputChange("isTicket", e.target.checked)
+                      }
                     />
                     <Label htmlFor="isTicket">Is Ticket</Label>
                   </div>
@@ -549,7 +746,9 @@ export default function Activities() {
                       type="checkbox"
                       id="premiumSupport"
                       checked={newActivity.premiumSupport}
-                      onChange={(e) => handleInputChange('premiumSupport', e.target.checked)}
+                      onChange={(e) =>
+                        handleInputChange("premiumSupport", e.target.checked)
+                      }
                     />
                     <Label htmlFor="premiumSupport">Premium Support</Label>
                   </div>
@@ -563,7 +762,7 @@ export default function Activities() {
                   id="notes"
                   placeholder="Enter activity notes and details..."
                   value={newActivity.notes}
-                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                  onChange={(e) => handleInputChange("notes", e.target.value)}
                   rows={3}
                 />
               </div>
@@ -572,7 +771,10 @@ export default function Activities() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddActivity} className="bg-blue-600 hover:bg-blue-700">
+              <Button
+                onClick={handleAddActivity}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
                 Create Activity
               </Button>
             </DialogFooter>
@@ -582,20 +784,67 @@ export default function Activities() {
 
       {/* Enhanced Filters */}
       <Card className="border border-blue-200 bg-white shadow-lg">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Advanced Activity Filters</CardTitle>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetFilters}
+            className="border-blue-200 text-blue-600 hover:bg-blue-50"
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Reset Filters
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search activities, clients, or notes..." 
-                className="pl-10 bg-background/80"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            {/* Search and Date Range */}
+            <div className="flex flex-col lg:flex-row gap-4 items-end">
+              <div className="flex-1 min-w-0">
+                <Label htmlFor="search" className="text-sm font-medium text-gray-700 mb-2 block">Search</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="search"
+                    placeholder="Search activities, clients, or notes..."
+                    className="pl-10 bg-background/80"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-4 lg:min-w-fit">
+                <div className="space-y-2 min-w-[140px]">
+                  <Label
+                    htmlFor="fromDate"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    From Date
+                  </Label>
+                  <Input
+                    id="fromDate"
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className="bg-background/80"
+                  />
+                </div>
+                <div className="space-y-2 min-w-[140px]">
+                  <Label
+                    htmlFor="toDate"
+                    className="text-sm font-medium text-gray-700"
+                  >
+                    To Date
+                  </Label>
+                  <Input
+                    id="toDate"
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className="bg-background/80"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Filter Row 1 */}
@@ -606,18 +855,25 @@ export default function Activities() {
                 </SelectTrigger>
                 <SelectContent>
                   {activityTypes.map((type) => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <Select
+                value={selectedCategory}
+                onValueChange={setSelectedCategory}
+              >
                 <SelectTrigger className="bg-background/80">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((category) => (
-                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -628,18 +884,25 @@ export default function Activities() {
                 </SelectTrigger>
                 <SelectContent>
                   {statuses.map((status) => (
-                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                    <SelectItem key={status} value={status}>
+                      {status}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={selectedTicketFilter} onValueChange={setSelectedTicketFilter}>
+              <Select
+                value={selectedTicketFilter}
+                onValueChange={setSelectedTicketFilter}
+              >
                 <SelectTrigger className="bg-background/80">
                   <SelectValue placeholder="Type Filter" />
                 </SelectTrigger>
                 <SelectContent>
                   {ticketFilters.map((filter) => (
-                    <SelectItem key={filter} value={filter}>{filter}</SelectItem>
+                    <SelectItem key={filter} value={filter}>
+                      {filter}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -653,7 +916,9 @@ export default function Activities() {
                 </SelectTrigger>
                 <SelectContent>
                   {clients.map((client) => (
-                    <SelectItem key={client} value={client}>{client}</SelectItem>
+                    <SelectItem key={client} value={client}>
+                      {client}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -664,29 +929,41 @@ export default function Activities() {
                 </SelectTrigger>
                 <SelectContent>
                   {teamMembers.map((member) => (
-                    <SelectItem key={member} value={member}>{member}</SelectItem>
+                    <SelectItem key={member} value={member}>
+                      {member}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={selectedPriority} onValueChange={setSelectedPriority}>
+              <Select
+                value={selectedPriority}
+                onValueChange={setSelectedPriority}
+              >
                 <SelectTrigger className="bg-background/80">
                   <SelectValue placeholder="Priority" />
                 </SelectTrigger>
                 <SelectContent>
                   {priorities.map((priority) => (
-                    <SelectItem key={priority} value={priority}>{priority}</SelectItem>
+                    <SelectItem key={priority} value={priority}>
+                      {priority}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={selectedTicketType} onValueChange={setSelectedTicketType}>
+              <Select
+                value={selectedTicketType}
+                onValueChange={setSelectedTicketType}
+              >
                 <SelectTrigger className="bg-background/80">
                   <SelectValue placeholder="Ticket Type" />
                 </SelectTrigger>
                 <SelectContent>
                   {ticketTypes.map((type) => (
-                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -698,7 +975,10 @@ export default function Activities() {
       {/* Activities List */}
       <div className="space-y-4">
         {filteredActivities.map((activity) => (
-          <Card key={activity.id} className="border-blue-200/50 bg-white/90 backdrop-blur-sm hover:shadow-lg transition-all duration-200">
+          <Card
+            key={activity.id}
+            className="border-blue-200/50 bg-white/90 backdrop-blur-sm hover:shadow-lg transition-all duration-200"
+          >
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4 flex-1">
@@ -707,7 +987,9 @@ export default function Activities() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="font-semibold text-foreground">{activity.linkedClient}</h3>
+                      <h3 className="font-semibold text-foreground">
+                        {activity.linkedClient}
+                      </h3>
                       <Badge className={getCategoryColor(activity.category)}>
                         {activity.category}
                       </Badge>
@@ -715,7 +997,10 @@ export default function Activities() {
                         {activity.status}
                       </Badge>
                       {activity.isTicket && (
-                        <Badge variant="outline" className={getTicketTypeColor(activity.ticketType)}>
+                        <Badge
+                          variant="outline"
+                          className={getTicketTypeColor(activity.ticketType)}
+                        >
                           {getTicketTypeIcon(activity.ticketType)}
                           <span className="ml-1">{activity.ticketType}</span>
                         </Badge>
@@ -727,13 +1012,17 @@ export default function Activities() {
                         </Badge>
                       )}
                     </div>
-                    
-                    <p className="text-sm text-muted-foreground mb-2">{activity.notes}</p>
-                    
+
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {activity.notes}
+                    </p>
+
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-muted-foreground">
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-3 w-3" />
-                        <span>{activity.date} at {activity.time}</span>
+                        <span>
+                          {activity.date} at {activity.time}
+                        </span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <User className="h-3 w-3" />
@@ -764,7 +1053,11 @@ export default function Activities() {
                     {activity.nextStep && (
                       <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
                         <strong>Next Step:</strong> {activity.nextStep}
-                        {activity.nextStepDate && <span className="ml-2 text-muted-foreground">({activity.nextStepDate})</span>}
+                        {activity.nextStepDate && (
+                          <span className="ml-2 text-muted-foreground">
+                            ({activity.nextStepDate})
+                          </span>
+                        )}
                       </div>
                     )}
 
@@ -778,7 +1071,7 @@ export default function Activities() {
                     )}
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-2">
                   <Badge className={getPriorityColor(activity.priority)}>
                     {activity.priority}
@@ -813,14 +1106,15 @@ export default function Activities() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
-              {selectedActivity && getActivityTypeIcon(selectedActivity.activityType)}
+              {selectedActivity &&
+                getActivityTypeIcon(selectedActivity.activityType)}
               <span>{selectedActivity?.linkedClient} - Activity Details</span>
             </DialogTitle>
             <DialogDescription>
               Comprehensive activity and ticket information
             </DialogDescription>
           </DialogHeader>
-          
+
           {selectedActivity && (
             <div className="space-y-6">
               {/* Status Overview */}
@@ -832,19 +1126,25 @@ export default function Activities() {
                   <p className="text-xs text-gray-600 mt-1">Status</p>
                 </div>
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <Badge className={getPriorityColor(selectedActivity.priority)}>
+                  <Badge
+                    className={getPriorityColor(selectedActivity.priority)}
+                  >
                     {selectedActivity.priority}
                   </Badge>
                   <p className="text-xs text-gray-600 mt-1">Priority</p>
                 </div>
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <Badge className={getCategoryColor(selectedActivity.category)}>
+                  <Badge
+                    className={getCategoryColor(selectedActivity.category)}
+                  >
                     {selectedActivity.category}
                   </Badge>
                   <p className="text-xs text-gray-600 mt-1">Category</p>
                 </div>
                 <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <p className="font-bold text-blue-800">€{selectedActivity.costPerActivity}</p>
+                  <p className="font-bold text-blue-800">
+                    €{selectedActivity.costPerActivity}
+                  </p>
                   <p className="text-xs text-gray-600 mt-1">Cost</p>
                 </div>
               </div>
@@ -852,39 +1152,66 @@ export default function Activities() {
               {/* Activity Details */}
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-blue-800">Activity Information</h3>
+                  <h3 className="text-lg font-semibold mb-4 text-blue-800">
+                    Activity Information
+                  </h3>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-sm font-medium text-gray-700">Activity Type</p>
-                      <p className="text-sm text-gray-600">{selectedActivity.activityType}</p>
+                      <p className="text-sm font-medium text-gray-700">
+                        Activity Type
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {selectedActivity.activityType}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-700">Date & Time</p>
-                      <p className="text-sm text-gray-600">{selectedActivity.date} at {selectedActivity.time}</p>
+                      <p className="text-sm font-medium text-gray-700">
+                        Date & Time
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {selectedActivity.date} at {selectedActivity.time}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-700">Responsible</p>
-                      <p className="text-sm text-gray-600">{selectedActivity.responsible}</p>
+                      <p className="text-sm font-medium text-gray-700">
+                        Responsible
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {selectedActivity.responsible}
+                      </p>
                     </div>
                     {selectedActivity.deadline && (
                       <div>
-                        <p className="text-sm font-medium text-gray-700">Deadline</p>
-                        <p className="text-sm text-gray-600">{selectedActivity.deadline}</p>
+                        <p className="text-sm font-medium text-gray-700">
+                          Deadline
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {selectedActivity.deadline}
+                        </p>
                       </div>
                     )}
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-blue-800">Client & Ticket Info</h3>
+                  <h3 className="text-lg font-semibold mb-4 text-blue-800">
+                    Client & Ticket Info
+                  </h3>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-sm font-medium text-gray-700">Linked Client</p>
+                      <p className="text-sm font-medium text-gray-700">
+                        Linked Client
+                      </p>
                       <div className="flex items-center space-x-2">
-                        <p className="text-sm text-gray-600">{selectedActivity.linkedClient} ({selectedActivity.clientType})</p>
+                        <p className="text-sm text-gray-600">
+                          {selectedActivity.linkedClient} (
+                          {selectedActivity.clientType})
+                        </p>
                         <button
                           className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 cursor-pointer transition-colors text-xs hover:bg-blue-50 rounded px-2 py-1"
-                          onClick={() => handleOpenMaps(selectedActivity.linkedClient)}
+                          onClick={() =>
+                            handleOpenMaps(selectedActivity.linkedClient)
+                          }
                           title="View client location on Google Maps"
                         >
                           <MapPin className="h-3 w-3" />
@@ -894,10 +1221,14 @@ export default function Activities() {
                     </div>
                     {selectedActivity.isTicket && (
                       <div>
-                        <p className="text-sm font-medium text-gray-700">Ticket Type</p>
+                        <p className="text-sm font-medium text-gray-700">
+                          Ticket Type
+                        </p>
                         <div className="flex items-center space-x-2">
                           {getTicketTypeIcon(selectedActivity.ticketType)}
-                          <span className="text-sm text-gray-600">{selectedActivity.ticketType}</span>
+                          <span className="text-sm text-gray-600">
+                            {selectedActivity.ticketType}
+                          </span>
                         </div>
                       </div>
                     )}
@@ -916,11 +1247,17 @@ export default function Activities() {
               {/* Next Steps */}
               {selectedActivity.nextStep && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-blue-800">Next Steps</h3>
+                  <h3 className="text-lg font-semibold mb-4 text-blue-800">
+                    Next Steps
+                  </h3>
                   <div className="p-4 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-gray-700">{selectedActivity.nextStep}</p>
+                    <p className="text-sm text-gray-700">
+                      {selectedActivity.nextStep}
+                    </p>
                     {selectedActivity.nextStepDate && (
-                      <p className="text-xs text-gray-600 mt-2">Scheduled for: {selectedActivity.nextStepDate}</p>
+                      <p className="text-xs text-gray-600 mt-2">
+                        Scheduled for: {selectedActivity.nextStepDate}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -928,21 +1265,32 @@ export default function Activities() {
 
               {/* Notes */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-blue-800">Notes</h3>
+                <h3 className="text-lg font-semibold mb-4 text-blue-800">
+                  Notes
+                </h3>
                 <div className="p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-700">{selectedActivity.notes}</p>
+                  <p className="text-sm text-gray-700">
+                    {selectedActivity.notes}
+                  </p>
                 </div>
               </div>
 
               {/* Attachments */}
               {selectedActivity.attachments.length > 0 && (
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-blue-800">Attachments</h3>
+                  <h3 className="text-lg font-semibold mb-4 text-blue-800">
+                    Attachments
+                  </h3>
                   <div className="space-y-2">
                     {selectedActivity.attachments.map((attachment, idx) => (
-                      <div key={idx} className="flex items-center space-x-2 p-2 bg-blue-50 rounded border">
+                      <div
+                        key={idx}
+                        className="flex items-center space-x-2 p-2 bg-blue-50 rounded border"
+                      >
                         <Paperclip className="h-4 w-4 text-blue-600" />
-                        <span className="text-sm text-gray-700">{attachment}</span>
+                        <span className="text-sm text-gray-700">
+                          {attachment}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -951,23 +1299,33 @@ export default function Activities() {
 
               {/* Activity Log */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-blue-800">Activity Log</h3>
+                <h3 className="text-lg font-semibold mb-4 text-blue-800">
+                  Activity Log
+                </h3>
                 <div className="space-y-2">
                   {selectedActivity.activityLog.map((log, idx) => (
-                    <div key={idx} className="flex items-center space-x-2 p-2 bg-gray-50 rounded text-sm">
+                    <div
+                      key={idx}
+                      className="flex items-center space-x-2 p-2 bg-gray-50 rounded text-sm"
+                    >
                       <User className="h-3 w-3 text-gray-600" />
                       <span className="font-medium">{log.user}</span>
                       <span className="text-gray-600">{log.action}</span>
-                      <span className="text-gray-500 text-xs ml-auto">{log.timestamp}</span>
+                      <span className="text-gray-500 text-xs ml-auto">
+                        {log.timestamp}
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
           )}
-          
+
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsViewDialogOpen(false)}
+            >
               Close
             </Button>
             <Button
@@ -990,7 +1348,8 @@ export default function Activities() {
           <DialogHeader>
             <DialogTitle>Edit Activity/Ticket</DialogTitle>
             <DialogDescription>
-              Update activity or support ticket information with full tracking capabilities.
+              Update activity or support ticket information with full tracking
+              capabilities.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-6 py-4">
@@ -998,21 +1357,35 @@ export default function Activities() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-activityType">Activity Type *</Label>
-                <Select value={editActivity.activityType} onValueChange={(value) => handleEditInputChange('activityType', value)}>
+                <Select
+                  value={editActivity.activityType}
+                  onValueChange={(value) =>
+                    handleEditInputChange("activityType", value)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select activity type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Call">Call</SelectItem>
                     <SelectItem value="Email">Email</SelectItem>
-                    <SelectItem value="Online Meeting">Online Meeting</SelectItem>
-                    <SelectItem value="In-person Meeting">In-person Meeting</SelectItem>
+                    <SelectItem value="Online Meeting">
+                      Online Meeting
+                    </SelectItem>
+                    <SelectItem value="In-person Meeting">
+                      In-person Meeting
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-category">Category *</Label>
-                <Select value={editActivity.category} onValueChange={(value) => handleEditInputChange('category', value)}>
+                <Select
+                  value={editActivity.category}
+                  onValueChange={(value) =>
+                    handleEditInputChange("category", value)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
@@ -1032,12 +1405,19 @@ export default function Activities() {
                   id="edit-linkedClient"
                   placeholder="Enter client name"
                   value={editActivity.linkedClient}
-                  onChange={(e) => handleEditInputChange('linkedClient', e.target.value)}
+                  onChange={(e) =>
+                    handleEditInputChange("linkedClient", e.target.value)
+                  }
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-clientType">Client Type</Label>
-                <Select value={editActivity.clientType} onValueChange={(value) => handleEditInputChange('clientType', value)}>
+                <Select
+                  value={editActivity.clientType}
+                  onValueChange={(value) =>
+                    handleEditInputChange("clientType", value)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select client type" />
                   </SelectTrigger>
@@ -1057,7 +1437,9 @@ export default function Activities() {
                   id="edit-date"
                   type="date"
                   value={editActivity.date}
-                  onChange={(e) => handleEditInputChange('date', e.target.value)}
+                  onChange={(e) =>
+                    handleEditInputChange("date", e.target.value)
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -1066,18 +1448,27 @@ export default function Activities() {
                   id="edit-time"
                   type="time"
                   value={editActivity.time}
-                  onChange={(e) => handleEditInputChange('time', e.target.value)}
+                  onChange={(e) =>
+                    handleEditInputChange("time", e.target.value)
+                  }
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-responsible">Responsible *</Label>
-                <Select value={editActivity.responsible} onValueChange={(value) => handleEditInputChange('responsible', value)}>
+                <Select
+                  value={editActivity.responsible}
+                  onValueChange={(value) =>
+                    handleEditInputChange("responsible", value)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select team member" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Ana Marić">Ana Marić</SelectItem>
-                    <SelectItem value="Marko Petrović">Marko Petrović</SelectItem>
+                    <SelectItem value="Marko Petrović">
+                      Marko Petrović
+                    </SelectItem>
                     <SelectItem value="Petra Babić">Petra Babić</SelectItem>
                   </SelectContent>
                 </Select>
@@ -1088,7 +1479,12 @@ export default function Activities() {
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-status">Status</Label>
-                <Select value={editActivity.status} onValueChange={(value) => handleEditInputChange('status', value)}>
+                <Select
+                  value={editActivity.status}
+                  onValueChange={(value) =>
+                    handleEditInputChange("status", value)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
@@ -1101,7 +1497,12 @@ export default function Activities() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-priority">Priority</Label>
-                <Select value={editActivity.priority} onValueChange={(value) => handleEditInputChange('priority', value)}>
+                <Select
+                  value={editActivity.priority}
+                  onValueChange={(value) =>
+                    handleEditInputChange("priority", value)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
@@ -1119,7 +1520,9 @@ export default function Activities() {
                   id="edit-deadline"
                   type="date"
                   value={editActivity.deadline}
-                  onChange={(e) => handleEditInputChange('deadline', e.target.value)}
+                  onChange={(e) =>
+                    handleEditInputChange("deadline", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -1132,7 +1535,9 @@ export default function Activities() {
                   id="edit-reminderDate"
                   type="date"
                   value={editActivity.reminderDate}
-                  onChange={(e) => handleEditInputChange('reminderDate', e.target.value)}
+                  onChange={(e) =>
+                    handleEditInputChange("reminderDate", e.target.value)
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -1141,7 +1546,9 @@ export default function Activities() {
                   id="edit-nextStepDate"
                   type="date"
                   value={editActivity.nextStepDate}
-                  onChange={(e) => handleEditInputChange('nextStepDate', e.target.value)}
+                  onChange={(e) =>
+                    handleEditInputChange("nextStepDate", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -1153,7 +1560,9 @@ export default function Activities() {
                 id="edit-nextStep"
                 placeholder="Describe the next action to be taken"
                 value={editActivity.nextStep}
-                onChange={(e) => handleEditInputChange('nextStep', e.target.value)}
+                onChange={(e) =>
+                  handleEditInputChange("nextStep", e.target.value)
+                }
               />
             </div>
 
@@ -1161,7 +1570,12 @@ export default function Activities() {
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-ticketType">Ticket Type</Label>
-                <Select value={editActivity.ticketType} onValueChange={(value) => handleEditInputChange('ticketType', value)}>
+                <Select
+                  value={editActivity.ticketType}
+                  onValueChange={(value) =>
+                    handleEditInputChange("ticketType", value)
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select ticket type" />
                   </SelectTrigger>
@@ -1180,7 +1594,9 @@ export default function Activities() {
                   type="number"
                   placeholder="0"
                   value={editActivity.costPerActivity}
-                  onChange={(e) => handleEditInputChange('costPerActivity', e.target.value)}
+                  onChange={(e) =>
+                    handleEditInputChange("costPerActivity", e.target.value)
+                  }
                 />
               </div>
               <div className="space-y-2 flex items-center gap-4 pt-6">
@@ -1189,7 +1605,9 @@ export default function Activities() {
                     type="checkbox"
                     id="edit-isTicket"
                     checked={editActivity.isTicket}
-                    onChange={(e) => handleEditInputChange('isTicket', e.target.checked)}
+                    onChange={(e) =>
+                      handleEditInputChange("isTicket", e.target.checked)
+                    }
                   />
                   <Label htmlFor="edit-isTicket">Is Ticket</Label>
                 </div>
@@ -1198,7 +1616,9 @@ export default function Activities() {
                     type="checkbox"
                     id="edit-premiumSupport"
                     checked={editActivity.premiumSupport}
-                    onChange={(e) => handleEditInputChange('premiumSupport', e.target.checked)}
+                    onChange={(e) =>
+                      handleEditInputChange("premiumSupport", e.target.checked)
+                    }
                   />
                   <Label htmlFor="edit-premiumSupport">Premium Support</Label>
                 </div>
@@ -1212,16 +1632,22 @@ export default function Activities() {
                 id="edit-notes"
                 placeholder="Enter activity notes and details..."
                 value={editActivity.notes}
-                onChange={(e) => handleEditInputChange('notes', e.target.value)}
+                onChange={(e) => handleEditInputChange("notes", e.target.value)}
                 rows={3}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleUpdateActivity} className="bg-blue-600 hover:bg-blue-700">
+            <Button
+              onClick={handleUpdateActivity}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
               Update Activity
             </Button>
           </DialogFooter>

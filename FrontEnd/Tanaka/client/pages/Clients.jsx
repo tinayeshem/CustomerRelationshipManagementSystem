@@ -25,6 +25,7 @@ export default function ClientsPage() {
   const [selectedStatus, setSelectedStatus] = useState("All Statuses");
   const [selectedCounty, setSelectedCounty] = useState("All Counties");
   const [selectedKAM, setSelectedKAM] = useState("All KAMs");
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [sortBy, setSortBy] = useState("name");
 
   // ---- dialogs
