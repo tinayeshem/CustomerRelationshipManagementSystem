@@ -1,20 +1,36 @@
+// models/notification.model.js
 import mongoose from "mongoose";
+import { leanJSON } from "./common.js";
 
-const NotificationSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
-  title: String,
-  body: String,
-  entityType: { type: String, enum: ["Ticket","Activity","Contract","Lead","Client","Report"] },
-  entityId: mongoose.Schema.Types.ObjectId,
-  actionUrl: String,
-  importance: { type: String, enum: ["low","normal","high"], default: "normal" },
-  channels: [{ type: String, enum: ["inapp","email","webpush"] }],
-  readAt: Date,
-  seenAt: Date,
-  expiresAt: Date,
-  dedupeKey: { type: String, index: true }
-}, { timestamps: true });
+const NotificationSchema = new mongoose.Schema(
+  {
+    // who gets the bell
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 
-NotificationSchema.index({ user: 1, createdAt: -1 });
+    // what kind of bell it is
+    type: { type: String, enum: ["Reminder", "ContractRenewal", "ActivityAssigned", "TicketOverdue", "System"], required: true },
 
-export default mongoose.model("Notification", NotificationSchema);
+    // short title
+    title: { type: String, required: true },
+
+    // message body
+    body: { type: String },
+
+    // deep link to open the right page (your note)
+    link: { type: String },
+
+    // when we should ping
+    dueAt: { type: Date },
+
+    // when user read it
+    readAt: { type: Date },
+  },
+  { timestamps: true }
+);
+
+leanJSON(NotificationSchema);
+
+NotificationSchema.index({ userId: 1, readAt: 1 });
+NotificationSchema.index({ dueAt: 1 });
+
+export const Notification = mongoose.model("Notification", NotificationSchema);

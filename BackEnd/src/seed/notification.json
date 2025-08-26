@@ -1,0 +1,5 @@
+[
+  { "_id":"6511aa000000000000000001","userId":"64b0aa000000000000000002","type":"ActivityAssigned","title":"New task: Email proposal – Split","body":"Please send proposal and set demo date.","link":"/app/activities","dueAt":"2025-08-23T09:00:00.000Z","readAt":null },
+  { "_id":"6511aa000000000000000002","userId":"64b0aa000000000000000003","type":"Reminder","title":"Call Zagreb follow-up","body":"Send migration checklist after call.","link":"/app/activities","dueAt":"2025-08-25T09:00:00.000Z","readAt":null },
+  { "_id":"6511aa000000000000000003","userId":"64b0aa000000000000000004","type":"TicketOverdue","title":"Ticket overdue – Pula outage","body":"Investigate and update the ticket.","link":"/app/activities","dueAt":"2025-08-20T09:00:00.000Z","readAt":null }
+]

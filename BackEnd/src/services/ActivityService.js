@@ -1,15 +1,33 @@
 
-import { ActivityRepository } from "../repositories/ActivityRepo.js";
-import { toUi } from "../mappers/toUi.js";
 
-export class ActivityService {
-  constructor(repo = new ActivityRepository()) { this.repo = repo; }
-  async list(params) {
-    const res = await this.repo.list(params);
-    return { ...res, items: res.items.map(toUi) };
-  }
-  async get(id) { return toUi(await this.repo.findById(id)); }
-  async create(payload) { return toUi(await this.repo.create(payload)); }
-  async update(id, payload) { return toUi(await this.repo.update(id, payload)); }
-  async remove(id) { await this.repo.remove(id); return { ok: true }; }
-}
+import { toUi } from "../mappers/toUi.js";
+import { makeService } from "./baseService.js";
+import { ActivityRepo } from "../repositories/ActivityRepo.js";
+export const ActivityService = makeService(ActivityRepo);
+
+
+
+
+
+
+
+
+
+// export const ActivityService = {
+//   ...makeService(ActivityRepo), // bring create/get/list/update/remove
+
+//   // add specialty methods:
+//   listTickets: (opts = {}) => ActivityRepo.list({ isTicket: true }, opts),
+
+//   listByAssignee: (userId, opts = {}) =>
+//     ActivityRepo.list({ responsibleUserId: userId }, opts),
+
+//   // override list to support query strings like ?isTicket=true
+//   list: (q = {}) => {
+//     const f = {};
+//     if (q.isTicket === "true")  f.isTicket = true;
+//     if (q.isTicket === "false") f.isTicket = false;
+//     if (q.status) f.status = q.status;
+//     return ActivityRepo.list(f, { limit: Number(q.limit ?? 100) });
+//   },
+// };

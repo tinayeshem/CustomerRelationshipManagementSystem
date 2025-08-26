@@ -1,38 +1,51 @@
+// models/contract.model.js
 import mongoose from "mongoose";
-import { AttachmentSchema as ___Attachment } from "./common.js";
+import { AttachmentSchema, Money, leanJSON } from "./common.js";
 
-const ContractVersionSchema = new mongoose.Schema({
-  version: Number,
-  fileKey: String,             // e.g. contracts/<clientId>/<contractId>/v3.pdf
-  size: Number,
-  mimeType: { type: String, default: "application/pdf" },
-  checksum: String,            // SHA-256
-  uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  uploadedAt: { type: Date, default: Date.now }
-}, { _id: false });
+const ContractSchema = new mongoose.Schema(
+  {
+    organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", required: true },
 
-const ContractSchema = new mongoose.Schema({
-  client: { type: mongoose.Schema.Types.ObjectId, ref: "Client", required: true },
-  title: String,               // e.g. "Support SLA 2025"
-  status: { type: String, enum: ["Draft","Active","Expired","Archived"], default: "Active" },
-  effectiveDate: Date,
-  expiryDate: Date,
-  renewalDate: Date,
-  signers: [{ name: String, email: String, role: String }],
-  tags: [String],
+    // short name like "SOM Support 2025"
+    title: { type: String, required: true, trim: true },
 
-  storageProvider: { type: String, default: "s3" },
-  currentVersion: Number,
-  versions: [ContractVersionSchema],
+    // tenders, justifications, etc. (spec)
+    contractType: { type: String, enum: ["Tender", "Justification", "Service", "Other"], required: true },
 
-  text: String,                // extracted text (optional, for search)
-  // embedding: { type: [Number], index: "vector" }, // (optional, Atlas Vector Search)
+    // net value and VAT
+    valueNet: Money,                                   // precise money
+    vatRate: { type: Number, default: 25 },            // 25% default in HR
 
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-  attachments: [___Attachment]
-}, { timestamps: true });
+    // time window
+    start: { type: Date, required: true },
+    end: { type: Date, required: true },
 
-ContractSchema.index({ title: "text", tags: "text", text: "text" });
-ContractSchema.index({ client: 1, status: 1, expiryDate: 1 });
+    // how they pay
+    paymentSchedule: { type: String, enum: ["OneTime", "Monthly", "Quarterly", "SemiAnnual", "Annual", "Custom"], required: true },
 
-export default mongoose.model("Contract", ContractSchema);
+    // when to nudge the KAM to renew (spec reminder)
+    renewalDate: { type: Date },
+
+    // active? expired? pending?
+    status: { type: String, enum: ["Active", "Pending", "Expired", "Terminated"], default: "Pending" },
+
+    // upload PDFs, POs, etc. (spec)
+    attachments: [AttachmentSchema],
+
+    notes: String,
+  },
+  { timestamps: true }
+);
+
+leanJSON(ContractSchema);
+
+// 👉 a friendly computed field: gross = net + VAT
+ContractSchema.virtual("valueGross").get(function () {
+  if (!this.valueNet) return null;
+  const net = Number(this.valueNet.toString());
+  return (net * (1 + (this.vatRate || 0) / 100)).toFixed(2);
+});
+
+ContractSchema.index({ organizationId: 1, status: 1, end: 1 });
+
+export const Contract = mongoose.model("Contract", ContractSchema);

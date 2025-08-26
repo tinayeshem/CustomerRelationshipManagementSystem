@@ -1,0 +1,7 @@
+[
+  { "_id": "64b0aa000000000000000001", "fullName": "Admin User", "email": "admin@fortis.hr", "role": "Admin",   "teamId": null, "permissions": [], "isActive": true, "passwordHash": null },
+  { "_id": "64b0aa000000000000000002", "fullName": "Ana Marić",  "email": "ana.maric@fortis.hr", "role": "KAM",     "teamId": null, "permissions": [], "isActive": true, "passwordHash": null },
+  { "_id": "64b0aa000000000000000003", "fullName": "Dario Ereš", "email": "dario.eres@fortis.hr", "role": "Sales",  "teamId": null, "permissions": [], "isActive": true, "passwordHash": null },
+  { "_id": "64b0aa000000000000000004", "fullName": "Ereš",       "email": "eres@fortis.hr",       "role": "Support","teamId": null, "permissions": [], "isActive": true, "passwordHash": null },
+  { "_id": "64b0aa000000000000000005", "fullName": "Mladen Makar","email": "mladen.makar@fortis.hr","role": "Manager","teamId": null,"permissions": [], "isActive": true, "passwordHash": null }
+]

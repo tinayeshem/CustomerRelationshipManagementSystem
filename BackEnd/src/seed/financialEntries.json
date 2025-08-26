@@ -1,0 +1,7 @@
+[
+  { "_id":"6500ff000000000000000001","organizationId":"64c0bb000000000000000001","contractId":"64e0dd000000000000000001","activityId":null,"kind":"Revenue","amount":"12000.00","currency":"EUR","date":"2025-08-01T00:00:00.000Z","category":"Invoice","notes":"Invoice for SOM Support 2025","attachments":[],"createdBy":"64b0aa000000000000000005" },
+  { "_id":"6500ff000000000000000002","organizationId":"64c0bb000000000000000001","contractId":"64e0dd000000000000000001","activityId":null,"kind":"Cost","amount":"350.00","currency":"EUR","date":"2025-08-10T00:00:00.000Z","category":"Travel","notes":"Travel related to SOM Support 2025","attachments":[],"createdBy":"64b0aa000000000000000004" },
+
+  { "_id":"6500ff000000000000000003","organizationId":"64c0bb000000000000000002","contractId":"64e0dd000000000000000002","activityId":null,"kind":"Revenue","amount":"35000.00","currency":"EUR","date":"2025-08-01T00:00:00.000Z","category":"Invoice","notes":"Invoice for SOM Upgrade 2025 2025","attachments":[],"createdBy":"64b0aa000000000000000005" },
+  { "_id":"6500ff000000000000000004","organizationId":"64c0bb000000000000000004","contractId":"64e0dd000000000000000003","activityId":null,"kind":"Revenue","amount":"95000.00","currency":"EUR","date":"2025-08-01T00:00:00.000Z","category":"Invoice","notes":"Invoice for Digitalization Tender 2025","attachments":[],"createdBy":"64b0aa000000000000000005" }
+]

@@ -8,33 +8,41 @@ const ActivityLogSchema = new mongoose.Schema({
 }, { _id: false });
 
 export const ActivitySchema = new mongoose.Schema({
-  activityType: { type: String, enum: ["Call","Email","Online Meeting","In-person Meeting"], required: true },
-  category: { type: String, enum: ["Sales","Support"], required: true },
-
-  linkedClient: { type: mongoose.Schema.Types.ObjectId, ref: "Client", required: true },
-  clientType: { type: String, enum: ["Client","LRSU"], required: true },
-
-  when: { type: Date, required: true }, // date+time
-  responsible: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-
-  status: { type: String, enum: ["To Do","In Progress","Done"], default: "To Do" },
-  deadline: Date,
-  reminderDate: Date,
-
+  kind: { type: String, enum: ["Task","Ticket"], required: true },
+  title: { type: String, required: true, trim: true },
+  description: String,
+  when: { type: Date, required: true },
+  dueDate: Date,
   nextStep: String,
-  nextStepDate: Date,
+  nextStepDueAt: Date,
 
-  notes: String,
-  attachments: [__Attachment],// embedded
+  // 🔧 make it optional w/ default: Tickets => Support, else Sales
+  category: { type: String, enum: ["Sales","Support"], default: function() {
+    return this.kind === "Ticket" ? "Support" : "Sales";
+  }},
 
-  costPerActivity: { type: Number, default: 0 },
-  ticketType: { type: String, enum: ["Bug","Question","Feature","Enhancement"] },
-  premiumSupport: { type: Boolean, default: false },
+  // 🔧 accept your seed values
+  activityType: {
+    type: String,
+    enum: ["Call","Email","Online Meeting","In-person Meeting","Onsite Meeting","Demo","Follow-up","Work","Other"],
+    required: true
+  },
 
-  activityLog: [ActivityLogSchema],//embedded
-  priority: { type: String, enum: ["Low","Medium","High","Urgent"], default: "Medium" },
+  organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", required: true },
+  contractId: { type: mongoose.Schema.Types.ObjectId, ref: "Contract" },
+  responsibleUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  assigneeIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 
-  isTicket: { type: Boolean, default: false }
+  // 🔧 allow P1/P2/P3 for tickets
+  status: { type: String, enum: ["To Do","In Progress","Done","Blocked","Cancelled"], default: "To Do" },
+  priority: { type: String, enum: ["Low","Medium","High","Urgent","P1","P2","P3"], default: "Medium" },
+
+  // 🔧 accept Incident/Request
+  ticketCategory: { type: String, enum: ["Bug","Question","User Support","Feature","Incident","Request","Other"], default: "Other" },
+
+  slaDueAt: Date,
+  cost: { type: mongoose.Schema.Types.Decimal128 },
+  attachments: [ __Attachment],
 }, { timestamps: true });
 
 
@@ -43,4 +51,4 @@ export const ActivitySchema = new mongoose.Schema({
 ActivitySchema.index({ notes: "text" });
 ActivitySchema.index({ linkedClient: 1, responsible: 1, when: -1, status: 1 });
 
-export default mongoose.model("Activity", ActivitySchema);
+export const Activity =  mongoose.model("Activity", ActivitySchema);

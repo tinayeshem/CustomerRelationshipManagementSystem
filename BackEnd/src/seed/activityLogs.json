@@ -1,0 +1,6 @@
+[
+  { "_id":"6522bb000000000000000001","entityType":"Team","entityId":"64d0cc000000000000000001","action":"created","changedBy":"64b0aa000000000000000001","at":"2025-08-10T10:00:00.000Z","before":null,"after":{"name":"Zagreb Sales Team"},"message":"Created team \"Zagreb Sales Team\""},
+  { "_id":"6522bb000000000000000002","entityType":"Contract","entityId":"64e0dd000000000000000001","action":"created","changedBy":"64b0aa000000000000000001","at":"2025-08-09T10:00:00.000Z","before":null,"after":{"title":"SOM Support 2025"},"message":"Created contract for Zagreb."},
+  { "_id":"6522bb000000000000000003","entityType":"Activity","entityId":"64f0ee000000000000000002","action":"created","changedBy":"64b0aa000000000000000002","at":"2025-08-20T10:10:00.000Z","before":null,"after":{"title":"Email proposal – Split"},"message":"Created activity."},
+  { "_id":"6522bb000000000000000004","entityType":"FinancialEntry","entityId":"6500ff000000000000000001","action":"created","changedBy":"64b0aa000000000000000005","at":"2025-08-01T10:00:00.000Z","before":null,"after":{"kind":"Revenue","amount":"12000.00"},"message":"Added invoice."}
+]

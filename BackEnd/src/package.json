@@ -1,7 +1,7 @@
 {
   "name": "src",
   "version": "1.0.0",
-  "type":"module",
+  "type": "module",
   "description": "",
   "main": "server.js",
   "scripts": {
@@ -9,21 +9,31 @@
     "start": "node server.js",
     "dev:local": "dotenv -e ../.env.local -- nodemon server.js",
     "dev:atlas": "dotenv -e ../.env.atlas -- nodemon server.js",
-    "db:seed:local": "dotenv -e ../.env.local -- node scripts/seed-all.js"
-    
+    "db:seed:local": "dotenv -e ../.env.local -- node scripts/seed.mjs",
+    "db:seed:fresh": "dotenv -e ../.env.local -- node scripts/seed.mjs --dir seed --fresh"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.17.1",
     "morgan": "^1.10.1",
-    "multer": "^2.0.2"
+    "multer": "^2.0.2",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-jwt": "^4.0.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.10"
