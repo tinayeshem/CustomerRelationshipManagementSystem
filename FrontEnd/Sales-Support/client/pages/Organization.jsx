@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { performDataMigration, isMigrationNeeded, getMigrationSummary } from "@/lib/organizationMigration";
+import { organizationsApi } from "@/lib/api/organizations";
 import {
   Plus,
   Search,
