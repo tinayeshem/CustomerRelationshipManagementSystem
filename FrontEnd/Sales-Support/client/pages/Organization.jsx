@@ -217,20 +217,78 @@ export default function Organization() {
     console.log("Performing data migration from Client and LRSU databases...");
 
     try {
-      // Simulate async operation for better UX
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      // Get migrated data from utility
       const migratedOrganizations = performDataMigration();
 
-      setOrganizations(migratedOrganizations);
-      localStorage.setItem('organizationData', JSON.stringify(migratedOrganizations));
+      // Transform frontend data to backend format
+      const backendOrganizations = migratedOrganizations.map(org => ({
+        name: org.organizationName,
+        unitType: mapUnitType(org.unitType, org.category),
+        status: mapStatus(org.status),
+        phase: org.phase,
+        nextPhase: org.nextPhase,
+        address: {
+          street: org.address,
+          city: org.city || org.municipality || org.county,
+          county: org.county,
+          postalCode: "",
+          country: "Croatia"
+        },
+        phone: org.phone,
+        fax: org.fax,
+        email: org.email,
+        website: org.websites?.[0],
+        contacts: org.contactPerson ? [{
+          fullName: `${org.contactPerson.firstName} ${org.contactPerson.surname}`.trim(),
+          role: org.contactPerson.role,
+          phone: org.contactPerson.phone,
+          email: "",
+          notes: ""
+        }] : [],
+        notes: org.notes
+      }));
 
-      console.log(`Migration completed: ${migratedOrganizations.length} organizations created`);
+      // Send each organization to backend
+      const createdOrganizations = [];
+      for (const orgData of backendOrganizations) {
+        try {
+          const created = await organizationsApi.create(orgData);
+          createdOrganizations.push(created);
+        } catch (error) {
+          console.warn("Failed to create organization:", orgData.name, error);
+        }
+      }
+
+      setOrganizations(createdOrganizations);
+      console.log(`Migration completed: ${createdOrganizations.length} organizations created`);
     } catch (error) {
       console.error("Migration failed:", error);
       alert("Migration failed. Please try again or contact support.");
     } finally {
       setIsMigrationInProgress(false);
+    }
+  };
+
+  // Helper functions to map frontend data to backend format
+  const mapUnitType = (unitType, category) => {
+    if (unitType === "Government") {
+      if (category === "County") return "County";
+      if (category === "City") return "City";
+      if (category === "Municipality") return "Municipality";
+    }
+    if (category === "Sports Club") return "Club";
+    if (category === "Association") return "Association";
+    if (category === "SME") return "Company";
+    if (category === "Craftsmen") return "Craftsman";
+    return "Other";
+  };
+
+  const mapStatus = (status) => {
+    switch (status) {
+      case "Active": return "Client";
+      case "Expired": return "Former Client";
+      case "Potential": return "Potential Client";
+      default: return status || "Not Contacted";
     }
   };
 
