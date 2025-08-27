@@ -693,16 +693,16 @@ export default function Sales() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <Input type="number" placeholder="Min €" value={filters.minVal}
+            <Input type="number" placeholder="Minimum Value €" value={filters.minVal}
               onChange={(e) => setFilters((f) => ({ ...f, minVal: e.target.value }))} />
-            <Input type="number" placeholder="Max €" value={filters.maxVal}
+            <Input type="number" placeholder="Maximum Value €" value={filters.maxVal}
               onChange={(e) => setFilters((f) => ({ ...f, maxVal: e.target.value }))} />
-            <Input type="date" value={filters.dateFrom}
+            <Input type="date" placeholder="Start Date" value={filters.dateFrom}
               onChange={(e) => setFilters((f) => ({ ...f, dateFrom: e.target.value }))} />
-            <Input type="date" value={filters.dateTo}
+            <Input type="date" placeholder="End Date" value={filters.dateTo}
               onChange={(e) => setFilters((f) => ({ ...f, dateTo: e.target.value }))} />
             <div className="flex gap-2">
-              <Button variant="outline" onClick={resetFilters} className="w-full">Reset</Button>
+              <Button variant="outline" onClick={resetFilters} className="w-full">Reset Filters</Button>
             </div>
           </div>
 
