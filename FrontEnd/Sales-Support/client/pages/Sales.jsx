@@ -643,7 +643,7 @@ export default function Sales() {
               onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
             />
             <Select value={filters.stage} onValueChange={(v) => setFilters((f) => ({ ...f, stage: v }))}>
-              <SelectTrigger><SelectValue placeholder="Stage" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Filter by Stage" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All stages</SelectItem>
                 <SelectItem value="Discovery">Discovery</SelectItem>
@@ -653,7 +653,7 @@ export default function Sales() {
               </SelectContent>
             </Select>
             <Select value={filters.status} onValueChange={(v) => setFilters((f) => ({ ...f, status: v }))}>
-              <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Filter by Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All statuses</SelectItem>
                 <SelectItem value="Hot">Hot</SelectItem>
@@ -662,7 +662,7 @@ export default function Sales() {
               </SelectContent>
             </Select>
             <Select value={filters.region} onValueChange={(v) => setFilters((f) => ({ ...f, region: v }))}>
-              <SelectTrigger><SelectValue placeholder="Region" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Filter by Region" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All regions</SelectItem>
                 <SelectItem value="Zagreb">Zagreb</SelectItem>
@@ -674,7 +674,7 @@ export default function Sales() {
               </SelectContent>
             </Select>
             <Select value={filters.product} onValueChange={(v) => setFilters((f) => ({ ...f, product: v }))}>
-              <SelectTrigger><SelectValue placeholder="Product" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Filter by Product" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All products</SelectItem>
                 <SelectItem value="LRSU Management">LRSU Management</SelectItem>
@@ -684,7 +684,7 @@ export default function Sales() {
               </SelectContent>
             </Select>
             <Select value={filters.assignee} onValueChange={(v) => setFilters((f) => ({ ...f, assignee: v }))}>
-              <SelectTrigger><SelectValue placeholder="Owner" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Filter by Owner" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All owners</SelectItem>
                 {teamDirectory.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
