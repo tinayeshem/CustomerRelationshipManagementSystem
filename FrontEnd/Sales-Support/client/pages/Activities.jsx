@@ -248,11 +248,6 @@ export default function Activities() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  // Teams state for managing created teams
-  const [createdTeams, setCreatedTeams] = useState(() => {
-    const saved = localStorage.getItem('createdTeams');
-    return saved ? JSON.parse(saved) : [];
-  });
 
   // Dynamic clients list based on activities
   const clients = React.useMemo(() => {
@@ -338,26 +333,6 @@ export default function Activities() {
       return;
     }
 
-    // Create team if multiple responsible members are selected
-    if (newActivity.responsible.length > 1) {
-      const teamName = `${newActivity.linkedClient} - ${newActivity.activityType} Team`;
-      const newTeam = {
-        id: Date.now(),
-        name: teamName,
-        members: newActivity.responsible,
-        createdDate: new Date().toISOString().split('T')[0],
-        activityId: activitiesList.length + 1,
-        clientName: newActivity.linkedClient,
-        activityType: newActivity.activityType
-      };
-
-      const updatedTeams = [...createdTeams, newTeam];
-      setCreatedTeams(updatedTeams);
-      localStorage.setItem('createdTeams', JSON.stringify(updatedTeams));
-
-      // Show success notification
-      alert(`Team "${teamName}" has been created with ${newActivity.responsible.length} members and added to the Teams dashboard!`);
-    }
 
     const activity = {
       id: activitiesList.length + 1,
