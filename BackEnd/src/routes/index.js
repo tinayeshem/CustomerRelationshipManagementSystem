@@ -38,6 +38,6 @@ r.use("/upload", upload); // /api/upload
 r.use("/ai", ai);         // /api/ai/suggest-next-step
 
 // 🛠️ optional utilities
-r.use("/scripts", scripts); // /api/scripts/run-renewal-check (admin-only helper)
+// r.use("/scripts", scripts); // /api/scripts/run-renewal-check (admin-only helper)
 
 export default r;
