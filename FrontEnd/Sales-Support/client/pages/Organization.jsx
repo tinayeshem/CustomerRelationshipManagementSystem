@@ -186,23 +186,29 @@ export default function Organization() {
     notes: ""
   });
 
-  // Load migrated data on component mount
+  // Load data from API on component mount
   useEffect(() => {
-    loadMigratedData();
+    loadOrganizations();
   }, []);
 
-  const loadMigratedData = () => {
-    // Check if migration has already been performed
-    const migratedData = localStorage.getItem('organizationData');
-    if (migratedData) {
-      const parsedData = JSON.parse(migratedData);
-      setOrganizations(parsedData);
-      console.log(`Loaded ${parsedData.length} organizations from storage`);
-    } else if (isMigrationNeeded()) {
-      // Show migration summary and perform migration
-      const summary = getMigrationSummary();
-      setMigrationSummary(summary);
-      performMigration();
+  const loadOrganizations = async () => {
+    try {
+      setIsMigrationInProgress(true);
+      const organizationsData = await organizationsApi.getAll();
+      setOrganizations(organizationsData);
+      console.log(`Loaded ${organizationsData.length} organizations from API`);
+    } catch (error) {
+      console.error("Failed to load organizations:", error);
+      // Fallback to migration if API fails and migration is needed
+      if (isMigrationNeeded()) {
+        const summary = getMigrationSummary();
+        setMigrationSummary(summary);
+        await performMigration();
+      } else {
+        alert("Failed to load organizations. Please try again or contact support.");
+      }
+    } finally {
+      setIsMigrationInProgress(false);
     }
   };
 
