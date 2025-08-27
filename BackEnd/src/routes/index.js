@@ -6,7 +6,7 @@ import auth from "./auth/authRoute.js";
 import oauth from "./auth/oauthRoute.js";
 
 // 📇 business routes
-import organization from "./organization.routes.js";
+import organization from "./organization.js";
 import team from "./teamRoute.js";
 import activity from "./activitiesRoutes.js";
 import contract from "./contractsRoutes.js";
