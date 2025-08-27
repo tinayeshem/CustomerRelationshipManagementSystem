@@ -19,8 +19,7 @@ import ai from "./ai.routes.js";
 
 // 🛠️ optional: test-only scripts (e.g., trigger cron once)
 // If you didn't create this yet, you can delete these two lines.
-//import scripts from "./scripts.routes.js";
-//const r = Router();
+const r = Router();
 
 // 🔐 auth endpoints live at /api/auth/...
 r.use("/auth", auth);     // /api/auth/register, /api/auth/login, /api/auth/me
