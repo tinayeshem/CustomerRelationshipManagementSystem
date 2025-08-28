@@ -183,6 +183,7 @@ export default function Organization() {
     contactSurname: "",
     contactRole: "",
     contactPhone: "",
+    responsibleMembers: [],
     category: "",
     notes: ""
   });
