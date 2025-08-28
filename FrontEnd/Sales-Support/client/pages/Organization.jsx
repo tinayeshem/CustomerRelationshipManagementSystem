@@ -1381,6 +1381,30 @@ export default function Organization() {
                   </Select>
                 </div>
 
+                <div className="space-y-3 col-span-2">
+                  <Label>Responsible Members</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {orgTeamMembers.map((member) => (
+                      <div key={member} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`edit-org-resp-${member.replace(' ', '-').toLowerCase()}`}
+                          checked={Array.isArray(editFormData.responsibleMembers) ? editFormData.responsibleMembers.includes(member) : false}
+                          onChange={(e) => {
+                            const current = Array.isArray(editFormData.responsibleMembers) ? editFormData.responsibleMembers : [];
+                            const updated = e.target.checked ? [...current, member] : current.filter(m => m !== member);
+                            setEditFormData({ ...editFormData, responsibleMembers: updated });
+                          }}
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <Label htmlFor={`edit-org-resp-${member.replace(' ', '-').toLowerCase()}`} className="text-sm font-medium">
+                          {member}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="space-y-2 col-span-2">
                   <Label htmlFor="edit-address">Address</Label>
                   <Input
