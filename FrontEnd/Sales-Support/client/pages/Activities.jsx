@@ -367,6 +367,7 @@ export default function Activities() {
     const updatedActivities = [activity, ...activitiesList];
     setActivitiesList(updatedActivities);
     localStorage.setItem('activitiesList', JSON.stringify(updatedActivities));
+    window.dispatchEvent(new Event('activitiesListUpdated'));
     setNewActivity({
       activityType: "",
       category: "Support",
@@ -456,6 +457,7 @@ export default function Activities() {
     );
     setActivitiesList(updatedActivitiesList);
     localStorage.setItem('activitiesList', JSON.stringify(updatedActivitiesList));
+    window.dispatchEvent(new Event('activitiesListUpdated'));
 
     setIsEditDialogOpen(false);
     setIsViewDialogOpen(false); // Close view dialog too
@@ -477,6 +479,7 @@ export default function Activities() {
     const updated = activitiesList.filter(a => a.id !== id);
     setActivitiesList(updated);
     localStorage.setItem('activitiesList', JSON.stringify(updated));
+    window.dispatchEvent(new Event('activitiesListUpdated'));
   };
 
   const handleBulkDeleteByClient = () => {
@@ -491,6 +494,7 @@ export default function Activities() {
     const updated = activitiesList.filter(a => !ids.has(a.id));
     setActivitiesList(updated);
     localStorage.setItem('activitiesList', JSON.stringify(updated));
+    window.dispatchEvent(new Event('activitiesListUpdated'));
   };
 
   return (
