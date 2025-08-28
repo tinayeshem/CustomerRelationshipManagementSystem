@@ -303,6 +303,7 @@ export default function Organization() {
         role: formData.contactRole,
         phone: formData.contactPhone
       },
+      responsibleMembers: formData.responsibleMembers,
       notes: formData.notes,
       createdDate: new Date().toISOString().split('T')[0],
       lastUpdated: new Date().toISOString().split('T')[0]
