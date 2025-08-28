@@ -482,12 +482,17 @@ export default function Activities() {
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => open && setIsDialogOpen(open)}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              New Activity
-            </Button>
-          </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <a href="/projects">
+              <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">Create Project</Button>
+            </a>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                New Activity
+              </Button>
+            </DialogTrigger>
+          </div>
           <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Create New Activity</DialogTitle>
