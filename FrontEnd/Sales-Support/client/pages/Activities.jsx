@@ -258,6 +258,23 @@ export default function Activities() {
     return allClients.filter(client => client !== "All Clients").sort().concat(["All Clients"]).reverse();
   }, [activitiesList]);
 
+  const organizationsList = React.useMemo(() => {
+    const stored = localStorage.getItem('organizationData');
+    return stored ? JSON.parse(stored) : [];
+  }, []);
+
+  const availableMembersForNew = React.useMemo(() => {
+    const org = organizationsList.find(o => o.organizationName === newActivity.linkedClient);
+    const defaults = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
+    return org?.responsibleMembers?.length ? org.responsibleMembers : defaults;
+  }, [organizationsList, newActivity.linkedClient]);
+
+  const availableMembersForEdit = React.useMemo(() => {
+    const org = organizationsList.find(o => o.organizationName === editActivity.linkedClient);
+    const defaults = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
+    return org?.responsibleMembers?.length ? org.responsibleMembers : defaults;
+  }, [organizationsList, editActivity.linkedClient]);
+
   // Form state for new activity
   const [newActivity, setNewActivity] = useState({
     activityType: "",
