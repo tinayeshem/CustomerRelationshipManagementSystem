@@ -32,6 +32,13 @@ export default function Projects() {
     const saved = localStorage.getItem("organizationData");
     return saved ? JSON.parse(saved) : [];
   });
+
+  useEffect(() => {
+    if (isCreateOpen) {
+      const saved = localStorage.getItem("organizationData");
+      setOrganizations(saved ? JSON.parse(saved) : []);
+    }
+  }, [isCreateOpen]);
   const [activities, setActivities] = useState(() => {
     const saved = localStorage.getItem("activitiesList");
     return saved ? JSON.parse(saved) : [];
