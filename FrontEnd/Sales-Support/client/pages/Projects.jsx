@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Calendar, CheckCircle, ClipboardCheck, Layers, ListChecks, Plus, Settings, Users } from "lucide-react";
 
 const defaultStages = ["Meeting", "Call", "Negotiation", "Contract"]; // ordered
+const DEFAULT_TEAM_MEMBERS = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
 
 const getStageBadge = (stage) => {
   switch (stage) {
@@ -59,7 +60,8 @@ export default function Projects() {
   const selectedOrg = useMemo(() => organizations.find(o => String(o.id) === String(createForm.organizationId)), [organizations, createForm.organizationId]);
 
   const availableMembers = useMemo(() => {
-    return selectedOrg?.responsibleMembers?.length ? selectedOrg.responsibleMembers : ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
+    const fromOrg = Array.isArray(selectedOrg?.responsibleMembers) ? selectedOrg.responsibleMembers : [];
+    return Array.from(new Set([...fromOrg, ...DEFAULT_TEAM_MEMBERS]));
   }, [selectedOrg]);
 
   const orgActivities = useMemo(() => {
@@ -155,7 +157,8 @@ export default function Projects() {
   const availableMembersForProject = useMemo(() => {
     if (!addActivityFor) return [];
     const org = organizations.find(o => String(o.id) === String(addActivityFor.organizationId));
-    return org?.responsibleMembers?.length ? org.responsibleMembers : ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
+    const fromOrg = Array.isArray(org?.responsibleMembers) ? org.responsibleMembers : [];
+    return Array.from(new Set([...fromOrg, ...DEFAULT_TEAM_MEMBERS]));
   }, [addActivityFor, organizations]);
 
   const handleAddActivityToProject = () => {
