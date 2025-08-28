@@ -1,5 +1,4 @@
-import { useState } from "react";
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -32,7 +31,8 @@ import {
   Edit,
   Eye,
   Upload,
-  MapPin
+  MapPin,
+  Trash2
 } from "lucide-react";
 
 // Enhanced activities data with all requested fields
@@ -248,18 +248,22 @@ export default function Activities() {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  // Teams state for managing created teams
-  const [createdTeams, setCreatedTeams] = useState(() => {
-    const saved = localStorage.getItem('createdTeams');
-    return saved ? JSON.parse(saved) : [];
-  });
 
-  // Dynamic clients list based on activities
+  // Dynamic clients list based on organizations + activities
   const clients = React.useMemo(() => {
+    const stored = localStorage.getItem('organizationData');
+    const orgNames = stored ? JSON.parse(stored).map(o => o.organizationName) : [];
     const activityClients = [...new Set(activitiesList.map(activity => activity.linkedClient))];
-    const allClients = [...new Set([...defaultClients, ...activityClients])];
+    const allClients = [...new Set([...defaultClients, ...orgNames, ...activityClients])];
     return allClients.filter(client => client !== "All Clients").sort().concat(["All Clients"]).reverse();
   }, [activitiesList]);
+
+  const organizationsList = React.useMemo(() => {
+    const stored = localStorage.getItem('organizationData');
+    return stored ? JSON.parse(stored) : [];
+  }, []);
+
+
 
   // Form state for new activity
   const [newActivity, setNewActivity] = useState({
@@ -306,6 +310,18 @@ export default function Activities() {
     priority: ""
   });
 
+  const availableMembersForNew = React.useMemo(() => {
+    const org = organizationsList.find(o => o.organizationName === newActivity.linkedClient);
+    const defaults = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
+    return org?.responsibleMembers?.length ? org.responsibleMembers : defaults;
+  }, [organizationsList, newActivity.linkedClient]);
+
+  const availableMembersForEdit = React.useMemo(() => {
+    const org = organizationsList.find(o => o.organizationName === editActivity.linkedClient);
+    const defaults = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
+    return org?.responsibleMembers?.length ? org.responsibleMembers : defaults;
+  }, [organizationsList, editActivity.linkedClient]);
+
   // Filtered activities
   const filteredActivities = activitiesList.filter((activity) => {
     const responsibleString = Array.isArray(activity.responsible) ? activity.responsible.join(", ") : activity.responsible;
@@ -338,26 +354,6 @@ export default function Activities() {
       return;
     }
 
-    // Create team if multiple responsible members are selected
-    if (newActivity.responsible.length > 1) {
-      const teamName = `${newActivity.linkedClient} - ${newActivity.activityType} Team`;
-      const newTeam = {
-        id: Date.now(),
-        name: teamName,
-        members: newActivity.responsible,
-        createdDate: new Date().toISOString().split('T')[0],
-        activityId: activitiesList.length + 1,
-        clientName: newActivity.linkedClient,
-        activityType: newActivity.activityType
-      };
-
-      const updatedTeams = [...createdTeams, newTeam];
-      setCreatedTeams(updatedTeams);
-      localStorage.setItem('createdTeams', JSON.stringify(updatedTeams));
-
-      // Show success notification
-      alert(`Team "${teamName}" has been created with ${newActivity.responsible.length} members and added to the Teams dashboard!`);
-    }
 
     const activity = {
       id: activitiesList.length + 1,
@@ -371,6 +367,7 @@ export default function Activities() {
     const updatedActivities = [activity, ...activitiesList];
     setActivitiesList(updatedActivities);
     localStorage.setItem('activitiesList', JSON.stringify(updatedActivities));
+    window.dispatchEvent(new Event('activitiesListUpdated'));
     setNewActivity({
       activityType: "",
       category: "Support",
@@ -460,6 +457,7 @@ export default function Activities() {
     );
     setActivitiesList(updatedActivitiesList);
     localStorage.setItem('activitiesList', JSON.stringify(updatedActivitiesList));
+    window.dispatchEvent(new Event('activitiesListUpdated'));
 
     setIsEditDialogOpen(false);
     setIsViewDialogOpen(false); // Close view dialog too
@@ -477,6 +475,28 @@ export default function Activities() {
     setToDate("");
   };
 
+  const handleDeleteActivity = (id) => {
+    const updated = activitiesList.filter(a => a.id !== id);
+    setActivitiesList(updated);
+    localStorage.setItem('activitiesList', JSON.stringify(updated));
+    window.dispatchEvent(new Event('activitiesListUpdated'));
+  };
+
+  const handleBulkDeleteByClient = () => {
+    const targets = selectedClient && selectedClient !== "All Clients"
+      ? activitiesList.filter(a => a.linkedClient === selectedClient)
+      : filteredActivities;
+    if (!targets.length) return;
+    const label = selectedClient && selectedClient !== "All Clients" ? selectedClient : "all filtered activities";
+    const should = window.confirm(`Delete ${targets.length} activities for ${label}?`);
+    if (!should) return;
+    const ids = new Set(targets.map(a => a.id));
+    const updated = activitiesList.filter(a => !ids.has(a.id));
+    setActivitiesList(updated);
+    localStorage.setItem('activitiesList', JSON.stringify(updated));
+    window.dispatchEvent(new Event('activitiesListUpdated'));
+  };
+
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
       {/* Header */}
@@ -488,12 +508,17 @@ export default function Activities() {
           </p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => open && setIsDialogOpen(open)}>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Plus className="h-4 w-4 mr-2" />
-              New Activity
-            </Button>
-          </DialogTrigger>
+          <div className="flex items-center gap-2">
+            <a href="/projects">
+              <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">Create Project</Button>
+            </a>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Plus className="h-4 w-4 mr-2" />
+                New Activity
+              </Button>
+            </DialogTrigger>
+          </div>
           <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()}>
             <DialogHeader>
               <DialogTitle>Create New Activity</DialogTitle>
@@ -553,12 +578,16 @@ export default function Activities() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="linkedClient">Linked Client *</Label>
-                  <Input
-                    id="linkedClient"
-                    placeholder="Enter client name"
-                    value={newActivity.linkedClient}
-                    onChange={(e) => handleInputChange('linkedClient', e.target.value)}
-                  />
+                  <Select value={newActivity.linkedClient} onValueChange={(value) => handleInputChange('linkedClient', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select organization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.filter(c => c !== "All Clients").sort().map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Unit Type - Horizontal Radio Buttons */}
@@ -619,7 +648,7 @@ export default function Activities() {
               <div className="space-y-3">
                 <Label>Responsible Team Members *</Label>
                 <div className="grid grid-cols-2 gap-3">
-                  {["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"].map((member) => (
+                  {availableMembersForNew.map((member) => (
                     <div key={member} className="flex items-center space-x-2">
                       <input
                         type="checkbox"
@@ -768,15 +797,28 @@ export default function Activities() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Advanced Activity Filters</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetFilters}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
-            >
-              <Filter className="h-4 w-4 mr-1" />
-              Reset Filters
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetFilters}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
+              >
+                <Filter className="h-4 w-4 mr-1" />
+                Reset Filters
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkDeleteByClient}
+                disabled={filteredActivities.length === 0}
+                className="border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                title="Delete all activities for the selected client or all filtered"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Delete Activities
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -1017,6 +1059,15 @@ export default function Activities() {
                     >
                       <Edit className="h-3 w-3 mr-1" />
                       Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteActivity(activity.id)}
+                      className="border-red-200 text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Delete
                     </Button>
                   </div>
                 </div>
@@ -1264,12 +1315,16 @@ export default function Activities() {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-linkedClient">Linked Client *</Label>
-                <Input
-                  id="edit-linkedClient"
-                  placeholder="Enter client name"
-                  value={editActivity.linkedClient}
-                  onChange={(e) => handleEditInputChange('linkedClient', e.target.value)}
-                />
+                <Select value={editActivity.linkedClient} onValueChange={(value) => handleEditInputChange('linkedClient', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select organization" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.filter(c => c !== "All Clients").sort().map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Unit Type - Horizontal Radio Buttons */}
@@ -1330,7 +1385,7 @@ export default function Activities() {
             <div className="space-y-3">
               <Label>Responsible Team Members *</Label>
               <div className="grid grid-cols-2 gap-3">
-                {["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"].map((member) => (
+                {availableMembersForEdit.map((member) => (
                   <div key={member} className="flex items-center space-x-2">
                     <input
                       type="checkbox"

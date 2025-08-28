@@ -15,6 +15,7 @@ import Teams from "./pages/Teams";
 import Activities from "./pages/Activities";
 import Organization from "./pages/Organization";
 import Reports from "./pages/Reports";
+import Projects from "./pages/Projects";
 import AIAdvisor from "./pages/AIAdvisor";
 import Support from "./pages/Support";
 import Sales from "./pages/Sales";
@@ -81,6 +82,14 @@ const AuthenticatedApp = () => {
         {/* Legacy routes for backward compatibility - redirect to organization */}
         <Route path="/clients" element={<Navigate to="/organization" replace />} />
         <Route path="/lrsu" element={<Navigate to="/organization" replace />} />
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <Projects />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/reports"
           element={

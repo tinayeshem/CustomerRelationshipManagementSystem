@@ -46,6 +46,7 @@ const organizationCategories = ["All Categories", "County", "Municipality", "Cit
 const statuses = ["All Statuses", "Active", "Expired", "Potential", "Client", "Former Client", "Negotiation in Progress", "Not Contacted", "Rejected"];
 const phases = ["All Phases", "Initial Contact", "Proposal", "Negotiation", "Contract", "Active", "Renewal", "Terminated"];
 const nextPhases = ["All Next Phases", "Follow-up Call", "Proposal Submission", "Contract Signing", "Implementation", "Review Meeting", "Renewal Discussion"];
+const orgTeamMembers = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
 
 const getStatusColor = (status) => {
   switch (status) {
@@ -156,6 +157,7 @@ export default function Organization() {
     contactSurname: "",
     contactRole: "",
     contactPhone: "",
+    responsibleMembers: [],
     // Legacy fields for migration compatibility
     category: "",
     notes: ""
@@ -181,24 +183,23 @@ export default function Organization() {
     contactSurname: "",
     contactRole: "",
     contactPhone: "",
+    responsibleMembers: [],
     category: "",
     notes: ""
   });
 
-  // Load migrated data on component mount
+  // Load data from API on component mount
   useEffect(() => {
     loadMigratedData();
   }, []);
 
   const loadMigratedData = () => {
-    // Check if migration has already been performed
     const migratedData = localStorage.getItem('organizationData');
     if (migratedData) {
       const parsedData = JSON.parse(migratedData);
       setOrganizations(parsedData);
       console.log(`Loaded ${parsedData.length} organizations from storage`);
     } else if (isMigrationNeeded()) {
-      // Show migration summary and perform migration
       const summary = getMigrationSummary();
       setMigrationSummary(summary);
       performMigration();
@@ -210,20 +211,39 @@ export default function Organization() {
     console.log("Performing data migration from Client and LRSU databases...");
 
     try {
-      // Simulate async operation for better UX
       await new Promise(resolve => setTimeout(resolve, 1000));
-
       const migratedOrganizations = performDataMigration();
-
       setOrganizations(migratedOrganizations);
       localStorage.setItem('organizationData', JSON.stringify(migratedOrganizations));
-
       console.log(`Migration completed: ${migratedOrganizations.length} organizations created`);
     } catch (error) {
       console.error("Migration failed:", error);
       alert("Migration failed. Please try again or contact support.");
     } finally {
       setIsMigrationInProgress(false);
+    }
+  };
+
+  // Helper functions to map frontend data to backend format
+  const mapUnitType = (unitType, category) => {
+    if (unitType === "Government") {
+      if (category === "County") return "County";
+      if (category === "City") return "City";
+      if (category === "Municipality") return "Municipality";
+    }
+    if (category === "Sports Club") return "Club";
+    if (category === "Association") return "Association";
+    if (category === "SME") return "Company";
+    if (category === "Craftsmen") return "Craftsman";
+    return "Other";
+  };
+
+  const mapStatus = (status) => {
+    switch (status) {
+      case "Active": return "Client";
+      case "Expired": return "Former Client";
+      case "Potential": return "Potential Client";
+      default: return status || "Not Contacted";
     }
   };
 
@@ -270,7 +290,7 @@ export default function Organization() {
       municipality: formData.municipality,
       city: formData.city,
       status: formData.status,
-      phase: formData.phase,
+      phase: formData.phase || "Initial Contact",
       nextPhase: formData.nextPhase,
       address: formData.address,
       phone: formData.phone,
@@ -283,6 +303,7 @@ export default function Organization() {
         role: formData.contactRole,
         phone: formData.contactPhone
       },
+      responsibleMembers: formData.responsibleMembers,
       notes: formData.notes,
       createdDate: new Date().toISOString().split('T')[0],
       lastUpdated: new Date().toISOString().split('T')[0]
@@ -291,8 +312,9 @@ export default function Organization() {
     const updatedOrganizations = [...organizations, newOrganization];
     setOrganizations(updatedOrganizations);
     localStorage.setItem('organizationData', JSON.stringify(updatedOrganizations));
+    window.dispatchEvent(new Event('organizationDataUpdated'));
     setIsAddDialogOpen(false);
-    
+
     // Reset form
     setFormData({
       organizationName: "",
@@ -343,6 +365,7 @@ export default function Organization() {
       contactRole: org.contactPerson?.role || "",
       contactPhone: org.contactPerson?.phone || "",
       category: org.category,
+      responsibleMembers: org.responsibleMembers || [],
       notes: org.notes || ""
     });
     setIsEditDialogOpen(true);
@@ -384,6 +407,7 @@ export default function Organization() {
         role: editFormData.contactRole,
         phone: editFormData.contactPhone
       },
+      responsibleMembers: editFormData.responsibleMembers,
       notes: editFormData.notes,
       lastUpdated: new Date().toISOString().split('T')[0]
     };
@@ -393,6 +417,23 @@ export default function Organization() {
     );
     setOrganizations(updatedOrganizations);
     localStorage.setItem('organizationData', JSON.stringify(updatedOrganizations));
+    window.dispatchEvent(new Event('organizationDataUpdated'));
+
+    // Strict sync: update linked projects to match new phase
+    const savedProjects = localStorage.getItem('projectsData');
+    const projectList = savedProjects ? JSON.parse(savedProjects) : [];
+    if (Array.isArray(projectList) && projectList.length) {
+      const pipeline = phases.slice(1);
+      const phaseIndex = pipeline.indexOf(updatedOrganization.phase);
+      const syncedProjects = projectList.map(p => {
+        if (String(p.organizationId) !== String(updatedOrganization.id)) return p;
+        const newStages = pipeline.map((name, idx) => ({ name, completed: phaseIndex >= 0 ? idx <= phaseIndex : false, order: idx + 1 }));
+        return { ...p, currentStage: updatedOrganization.phase || pipeline[0], stages: newStages };
+      });
+      localStorage.setItem('projectsData', JSON.stringify(syncedProjects));
+      window.dispatchEvent(new Event('projectsDataUpdated'));
+    }
+
     setIsEditDialogOpen(false);
   };
 
@@ -709,6 +750,30 @@ export default function Organization() {
                             ))}
                           </SelectContent>
                         </Select>
+                      </div>
+
+                      <div className="space-y-3 col-span-2">
+                        <Label>Responsible Members</Label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {orgTeamMembers.map((member) => (
+                            <div key={member} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`org-resp-${member.replace(' ', '-').toLowerCase()}`}
+                                checked={Array.isArray(formData.responsibleMembers) ? formData.responsibleMembers.includes(member) : false}
+                                onChange={(e) => {
+                                  const current = Array.isArray(formData.responsibleMembers) ? formData.responsibleMembers : [];
+                                  const updated = e.target.checked ? Array.from(new Set([...current, member])) : current.filter(m => m !== member);
+                                  setFormData({ ...formData, responsibleMembers: updated });
+                                }}
+                                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                              />
+                              <Label htmlFor={`org-resp-${member.replace(' ', '-').toLowerCase()}`} className="text-sm font-medium">
+                                {member}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
                       </div>
 
                       <div className="space-y-2 col-span-2">
@@ -1308,6 +1373,30 @@ export default function Organization() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-3 col-span-2">
+                  <Label>Responsible Members</Label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {orgTeamMembers.map((member) => (
+                      <div key={member} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`edit-org-resp-${member.replace(' ', '-').toLowerCase()}`}
+                          checked={Array.isArray(editFormData.responsibleMembers) ? editFormData.responsibleMembers.includes(member) : false}
+                          onChange={(e) => {
+                            const current = Array.isArray(editFormData.responsibleMembers) ? editFormData.responsibleMembers : [];
+                            const updated = e.target.checked ? Array.from(new Set([...current, member])) : current.filter(m => m !== member);
+                            setEditFormData({ ...editFormData, responsibleMembers: updated });
+                          }}
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <Label htmlFor={`edit-org-resp-${member.replace(' ', '-').toLowerCase()}`} className="text-sm font-medium">
+                          {member}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 <div className="space-y-2 col-span-2">

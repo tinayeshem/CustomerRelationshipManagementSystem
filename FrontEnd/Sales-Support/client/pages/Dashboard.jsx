@@ -22,6 +22,7 @@ import {
   Mail,
   Calendar,
   Settings,
+  Building,
 } from "lucide-react";
 
 const quickStats = [
@@ -307,7 +308,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center space-x-2">
                 <Activity className="h-5 w-5" />
-                <span>Recent Activities</span>
+                <span>Team Recent Activities</span>
               </CardTitle>
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/activities">
@@ -356,7 +357,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center space-x-2">
                 <Clock className="h-5 w-5" />
-                <span>Upcoming Tasks</span>
+                <span>Your Upcoming Task</span>
               </CardTitle>
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/activities">
@@ -422,9 +423,9 @@ export default function Dashboard() {
               asChild
               className="h-20 flex-col space-y-2 bg-gradient-to-br from-green-100 to-green-200 text-green-800 hover:from-green-200 hover:to-green-300 border border-green-200 shadow-md transition-all duration-300 hover:shadow-lg"
             >
-              <Link to="/clients">
-                <Users className="h-6 w-6" />
-                <span className="text-sm font-medium">Add Client</span>
+              <Link to="/organization">
+                <Building className="h-6 w-6" />
+                <span className="text-sm font-medium">Add Organization</span>
               </Link>
             </Button>
             <Button

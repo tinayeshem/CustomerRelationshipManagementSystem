@@ -29,6 +29,7 @@ export const ActivitySchema = new mongoose.Schema({
   },
 
   organizationId: { type: mongoose.Schema.Types.ObjectId, ref: "Organization", required: true },
+  projectId: { type: mongoose.Schema.Types.ObjectId, ref: "Project" },
   contractId: { type: mongoose.Schema.Types.ObjectId, ref: "Contract" },
   responsibleUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   assigneeIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
