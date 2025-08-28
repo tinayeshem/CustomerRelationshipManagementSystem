@@ -117,7 +117,7 @@ const AuthenticatedApp = () => {
         <Route
           path="/sales"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requiredPermission="sales">
               <Sales />
             </ProtectedRoute>
           }
