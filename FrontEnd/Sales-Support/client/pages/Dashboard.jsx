@@ -315,36 +315,51 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentActivities.map((activity) => {
-              const Icon = activity.icon;
-              return (
-                <div
-                  key={activity.id}
-                  className="flex items-center space-x-3 p-3 rounded-lg bg-background/50"
-                >
-                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-cute-primary/20">
-                    <Icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{activity.client}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {activity.type} • {activity.time}
-                    </p>
-                    <p className="text-xs text-blue-600 font-medium">
-                      by {activity.responsiblePerson}
-                    </p>
-                  </div>
-                  <Badge
-                    variant={
-                      activity.status === "completed" ? "default" : "secondary"
-                    }
-                    className="text-xs"
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity) => {
+                const Icon = activity.icon;
+                return (
+                  <div
+                    key={activity.id}
+                    className="flex items-center space-x-3 p-3 rounded-lg bg-background/50"
                   >
-                    {activity.status}
-                  </Badge>
-                </div>
-              );
-            })}
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-cute-primary/20">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{activity.client}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {activity.type} • {activity.time}
+                      </p>
+                      <p className="text-xs text-blue-600 font-medium">
+                        by {activity.responsiblePerson}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={
+                        activity.status === "completed" ? "default" : "secondary"
+                      }
+                      className="text-xs"
+                    >
+                      {activity.status}
+                    </Badge>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8">
+                <Activity className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-sm mb-2">No team activities yet</p>
+                <p className="text-xs text-gray-400">
+                  {!hasProjects
+                    ? "You're not assigned to any projects yet"
+                    : userProjects.length > 0
+                      ? "Your teammates haven't created activities for shared projects yet"
+                      : "Join a project to see team activities"
+                  }
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
