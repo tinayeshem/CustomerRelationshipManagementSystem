@@ -35,6 +35,7 @@ import {
   Trash2
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { TEAM_MEMBERS } from "@/constants/teamMembers";
 
 // Enhanced activities data with all requested fields
 const activities = [
@@ -234,6 +235,24 @@ export default function Activities() {
     return activities;
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newTicket, setNewTicket] = useState({
+    title: "",
+    client: "",
+    priority: "medium",
+    category: "Bug",
+    assignees: [],
+    description: "",
+    premium: false,
+  });
+  const getSupportPriorityColor = (p) => {
+    switch (p) {
+      case "urgent": return "bg-red-100 text-red-800 border-red-200";
+      case "high": return "bg-orange-100 text-orange-800 border-orange-200";
+      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "low": return "bg-green-100 text-green-800 border-green-200";
+      default: return "";
+    }
+  };
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
@@ -569,12 +588,94 @@ export default function Activities() {
           </div>
           <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()}>
             <DialogHeader>
-              <DialogTitle>Create New Activity</DialogTitle>
+              <DialogTitle>{user?.department === 'Support' ? 'Register Support Ticket' : 'Create New Activity'}</DialogTitle>
               <DialogDescription>
-                Add a comprehensive activity with full tracking capabilities
+                {user?.department === 'Support' ? 'Create a new support ticket. It will also appear in Activities.' : 'Add a comprehensive activity with full tracking capabilities'}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-6 py-4">
+            {user?.department === 'Support' && (
+              <div className="grid gap-6 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ticket-title">Title *</Label>
+                  <Input id="ticket-title" value={newTicket.title} onChange={(e) => setNewTicket(v => ({...v, title: e.target.value}))} placeholder="Short issue summary" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ticket-client">Client *</Label>
+                    <Select value={newTicket.client} onValueChange={(val) => setNewTicket(v => ({...v, client: val}))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select client" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.filter(c => c !== "All Clients").sort().map(c => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Assignees *</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {TEAM_MEMBERS.map(m => (
+                        <label key={m.name} className="flex items-center space-x-2 p-2 rounded bg-background/50">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                            checked={Array.isArray(newTicket.assignees) ? newTicket.assignees.includes(m.name) : false}
+                            onChange={(e) => {
+                              const current = Array.isArray(newTicket.assignees) ? newTicket.assignees : [];
+                              const updated = e.target.checked ? [...current, m.name] : current.filter(n => n !== m.name);
+                              setNewTicket(v => ({...v, assignees: updated}));
+                            }}
+                          />
+                          <span className="text-sm">{m.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ticket-priority">Priority</Label>
+                    <Select value={newTicket.priority} onValueChange={(val) => setNewTicket(v => ({...v, priority: val}))}>
+                      <SelectTrigger className={newTicket.priority ? getSupportPriorityColor(newTicket.priority) + " bg-opacity-20" : ""}>
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="urgent" className={getSupportPriorityColor('urgent') + ' hover:opacity-90'}>Urgent</SelectItem>
+                        <SelectItem value="high" className={getSupportPriorityColor('high') + ' hover:opacity-90'}>High</SelectItem>
+                        <SelectItem value="medium" className={getSupportPriorityColor('medium') + ' hover:opacity-90'}>Medium</SelectItem>
+                        <SelectItem value="low" className={getSupportPriorityColor('low') + ' hover:opacity-90'}>Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ticket-category">Category</Label>
+                    <Select value={newTicket.category} onValueChange={(val) => setNewTicket(v => ({...v, category: val}))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Bug">Bug</SelectItem>
+                        <SelectItem value="Question">Question</SelectItem>
+                        <SelectItem value="Feature">Feature</SelectItem>
+                        <SelectItem value="Training">Training</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ticket-description">Description</Label>
+                  <Textarea id="ticket-description" rows={4} value={newTicket.description} onChange={(e) => setNewTicket(v => ({...v, description: e.target.value}))} placeholder="Describe the issue..." />
+                </div>
+                <div className="flex items-center space-x-2 pt-2">
+                  <input id="ticket-premium" type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded" checked={newTicket.premium} onChange={(e) => setNewTicket(v => ({...v, premium: e.target.checked}))} />
+                  <Label htmlFor="ticket-premium">Premium</Label>
+                </div>
+              </div>
+            )}
+
+            <div className={`grid gap-6 py-4 ${user?.department === 'Support' ? 'hidden' : ''}`}>
               {/* Activity Type */}
               <div className="space-y-2">
                 <Label htmlFor="activityType">Activity Type *</Label>
@@ -832,8 +933,53 @@ export default function Activities() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddActivity} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleAddActivity} className={`bg-blue-600 hover:bg-blue-700 ${user?.department === 'Support' ? 'hidden' : ''}`}>
                 Create Activity
+              </Button>
+              <Button className={`bg-blue-600 hover:bg-blue-700 ${user?.department === 'Support' ? '' : 'hidden'}`} onClick={() => {
+                if (!newTicket.title || !newTicket.client || !Array.isArray(newTicket.assignees) || newTicket.assignees.length === 0) {
+                  alert("Please fill in title, client and at least one assignee");
+                  return;
+                }
+                try {
+                  const saved = localStorage.getItem('activitiesList');
+                  const list = saved ? JSON.parse(saved) : [];
+                  const now = new Date();
+                  const mapPriority = (p) => p === 'urgent' ? 'Urgent' : p === 'high' ? 'High' : p === 'low' ? 'Low' : 'Medium';
+                  const activity = {
+                    id: (list?.[0]?.id || 0) + list.length + 1,
+                    activityType: 'Email',
+                    category: 'Support',
+                    linkedClient: newTicket.client,
+                    unitType: 'Government',
+                    date: now.toISOString().split('T')[0],
+                    time: now.toTimeString().slice(0,5),
+                    responsible: newTicket.assignees,
+                    status: 'To Do',
+                    deadline: '',
+                    reminderDate: '',
+                    nextStep: '',
+                    nextStepDate: '',
+                    notes: newTicket.description || newTicket.title,
+                    attachments: [],
+                    costPerActivity: 0,
+                    premiumSupport: !!newTicket.premium,
+                    ticketType: newTicket.category,
+                    isTicket: true,
+                    priority: mapPriority(newTicket.priority),
+                  };
+                  const updated = [activity, ...list];
+                  localStorage.setItem('activitiesList', JSON.stringify(updated));
+                  window.dispatchEvent(new Event('activitiesListUpdated'));
+                  setIsDialogOpen(false);
+                  setNewTicket({ title: '', client: '', priority: 'medium', category: 'Bug', assignees: [], description: '', premium: false });
+                  alert('Ticket registered successfully');
+                } catch (e) {
+                  console.error('Failed to register ticket', e);
+                  alert('Failed to register ticket');
+                }
+              }}>
+                Register Ticket
               </Button>
             </DialogFooter>
           </DialogContent>
