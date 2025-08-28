@@ -469,7 +469,7 @@ export default function Projects() {
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Linked Activities</p>
                 <div className="space-y-1">
-                  {activities.filter(a => a.projectId === p.id).map((a) => (
+                  {activities.filter(a => a.projectId === p.id || a.linkedClient === p.organizationName).map((a) => (
                     <div key={a.id} className="text-sm flex items-center justify-between p-2 rounded bg-background/50">
                       <div>
                         <span className="font-medium">{a.activityType}</span> • {a.date} {a.time}
@@ -477,7 +477,7 @@ export default function Projects() {
                       <div className="text-xs text-muted-foreground">{Array.isArray(a.responsible) ? a.responsible.join(", ") : a.responsible}</div>
                     </div>
                   ))}
-                  {activities.filter(a => a.projectId === p.id).length === 0 && (
+                  {activities.filter(a => a.projectId === p.id || a.linkedClient === p.organizationName).length === 0 && (
                     <p className="text-xs text-gray-600">No activities linked yet.</p>
                   )}
                 </div>
