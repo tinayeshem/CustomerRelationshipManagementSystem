@@ -31,7 +31,8 @@ import {
   Edit,
   Eye,
   Upload,
-  MapPin
+  MapPin,
+  Trash2
 } from "lucide-react";
 
 // Enhanced activities data with all requested fields
@@ -472,6 +473,21 @@ export default function Activities() {
     setToDate("");
   };
 
+  const handleDeleteActivity = (id) => {
+    const updated = activitiesList.filter(a => a.id !== id);
+    setActivitiesList(updated);
+    localStorage.setItem('activitiesList', JSON.stringify(updated));
+  };
+
+  const handleBulkDeleteByClient = () => {
+    if (!selectedClient || selectedClient === "All Clients") return;
+    const should = window.confirm(`Delete all activities for ${selectedClient}?`);
+    if (!should) return;
+    const updated = activitiesList.filter(a => a.linkedClient !== selectedClient);
+    setActivitiesList(updated);
+    localStorage.setItem('activitiesList', JSON.stringify(updated));
+  };
+
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
       {/* Header */}
@@ -772,15 +788,28 @@ export default function Activities() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg">Advanced Activity Filters</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetFilters}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
-            >
-              <Filter className="h-4 w-4 mr-1" />
-              Reset Filters
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetFilters}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
+              >
+                <Filter className="h-4 w-4 mr-1" />
+                Reset Filters
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkDeleteByClient}
+                disabled={selectedClient === "All Clients"}
+                className="border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
+                title="Delete all activities for the selected client"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Delete Activities
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -1021,6 +1050,15 @@ export default function Activities() {
                     >
                       <Edit className="h-3 w-3 mr-1" />
                       Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteActivity(activity.id)}
+                      className="border-red-200 text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3 w-3 mr-1" />
+                      Delete
                     </Button>
                   </div>
                 </div>
