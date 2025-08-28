@@ -195,7 +195,7 @@ const statuses = ["All Statuses", "Active", "Expired", "Potential"];
 const counties = ["All Counties", "Zagreb", "Split-Dalmatia", "Osijek-Baranja", "Primorje-Gorski Kotar"];
 const contractValueRanges = ["All Values", "Under €10K", "€10K - €25K", "€25K - €50K", "Over €50K"];
 const financialHealth = ["All Health", "Profitable", "Break-even", "Loss-making"];
-const kamList = ["All KAMs", "Ana Marić", "Marko Petrović", "Petra Babić"];
+const kamList = ["All KAMs", ...getKAMNames()];
 const paymentMethods = ["Monthly", "Quarterly", "Bi-annual", "Annual"];
 
 const getStatusColor = (status) => {
