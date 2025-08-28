@@ -33,12 +33,6 @@ export default function Projects() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  useEffect(() => {
-    if (isCreateOpen) {
-      const saved = localStorage.getItem("organizationData");
-      setOrganizations(saved ? JSON.parse(saved) : []);
-    }
-  }, [isCreateOpen]);
   const [activities, setActivities] = useState(() => {
     const saved = localStorage.getItem("activitiesList");
     return saved ? JSON.parse(saved) : [];
@@ -46,6 +40,12 @@ export default function Projects() {
 
   // Create Project dialog state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  useEffect(() => {
+    if (isCreateOpen) {
+      const saved = localStorage.getItem("organizationData");
+      setOrganizations(saved ? JSON.parse(saved) : []);
+    }
+  }, [isCreateOpen]);
   const [createForm, setCreateForm] = useState({
     name: "",
     organizationId: "",
