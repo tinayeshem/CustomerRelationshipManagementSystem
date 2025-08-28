@@ -86,18 +86,25 @@ export default function Projects() {
       const saved = localStorage.getItem("organizationData");
       setOrganizations(saved ? JSON.parse(saved) : []);
     };
+    const reloadActivities = () => {
+      const saved = localStorage.getItem("activitiesList");
+      setActivities(saved ? JSON.parse(saved) : []);
+    };
     const onVisibility = () => {
       if (!document.hidden) {
         reloadProjects();
         reloadOrgs();
+        reloadActivities();
       }
     };
     window.addEventListener("projectsDataUpdated", reloadProjects);
     window.addEventListener("organizationDataUpdated", reloadOrgs);
+    window.addEventListener("activitiesListUpdated", reloadActivities);
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.removeEventListener("projectsDataUpdated", reloadProjects);
       window.removeEventListener("organizationDataUpdated", reloadOrgs);
+      window.removeEventListener("activitiesListUpdated", reloadActivities);
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
@@ -140,6 +147,7 @@ export default function Projects() {
   const saveActivities = (list) => {
     setActivities(list);
     localStorage.setItem("activitiesList", JSON.stringify(list));
+    window.dispatchEvent(new Event("activitiesListUpdated"));
   };
 
   const resetCreateForm = () => setCreateForm({
