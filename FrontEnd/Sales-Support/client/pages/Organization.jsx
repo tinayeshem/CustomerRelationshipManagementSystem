@@ -290,7 +290,7 @@ export default function Organization() {
       municipality: formData.municipality,
       city: formData.city,
       status: formData.status,
-      phase: formData.phase,
+      phase: formData.phase || "Initial Contact",
       nextPhase: formData.nextPhase,
       address: formData.address,
       phone: formData.phone,
