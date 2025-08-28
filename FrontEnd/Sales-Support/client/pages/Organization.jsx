@@ -364,6 +364,7 @@ export default function Organization() {
       contactRole: org.contactPerson?.role || "",
       contactPhone: org.contactPerson?.phone || "",
       category: org.category,
+      responsibleMembers: org.responsibleMembers || [],
       notes: org.notes || ""
     });
     setIsEditDialogOpen(true);
