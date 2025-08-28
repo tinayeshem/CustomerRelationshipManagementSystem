@@ -7,7 +7,7 @@ const ActivityLogSchema = new mongoose.Schema(
     // what we changed (dynamic types supported)
     entityType: {
       type: String,
-      enum: ["Organization", "Activity", "Contract", "User", "Team", "Notification", "FinancialEntry"],
+      enum: ["Organization", "Activity", "Contract", "User", "Team", "Notification", "FinancialEntry", "Project"],
       required: true,
     },
     // id of that thing
