@@ -1,11 +1,23 @@
 import * as React from "react";
 
 const Dialog = ({ children, open, onOpenChange }) => {
+  const allowed = new Set([
+    "DialogTrigger",
+    "DialogContent",
+    "DialogHeader",
+    "DialogFooter",
+    "DialogTitle",
+    "DialogDescription",
+  ]);
   return (
     <>
-      {React.Children.map(children, child => {
+      {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child, { open, onOpenChange });
+          const displayName = child.type && child.type.displayName;
+          if (displayName && allowed.has(displayName)) {
+            return React.cloneElement(child, { open, onOpenChange });
+          }
+          return child;
         }
         return child;
       })}
