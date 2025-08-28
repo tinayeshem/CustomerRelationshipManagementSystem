@@ -34,6 +34,7 @@ import {
   MapPin,
   Trash2
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Enhanced activities data with all requested fields
 const activities = [
@@ -310,7 +311,7 @@ export default function Activities() {
     priority: ""
   });
 
-  const { getAllUsers } = require("@/contexts/AuthContext").useAuth();
+  const { getAllUsers } = useAuth();
 
   const availableMembersForNew = React.useMemo(() => {
     const org = organizationsList.find(o => o.organizationName === newActivity.linkedClient);
