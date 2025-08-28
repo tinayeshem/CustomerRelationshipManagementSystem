@@ -480,10 +480,15 @@ export default function Activities() {
   };
 
   const handleBulkDeleteByClient = () => {
-    if (!selectedClient || selectedClient === "All Clients") return;
-    const should = window.confirm(`Delete all activities for ${selectedClient}?`);
+    const targets = selectedClient && selectedClient !== "All Clients"
+      ? activitiesList.filter(a => a.linkedClient === selectedClient)
+      : filteredActivities;
+    if (!targets.length) return;
+    const label = selectedClient && selectedClient !== "All Clients" ? selectedClient : "all filtered activities";
+    const should = window.confirm(`Delete ${targets.length} activities for ${label}?`);
     if (!should) return;
-    const updated = activitiesList.filter(a => a.linkedClient !== selectedClient);
+    const ids = new Set(targets.map(a => a.id));
+    const updated = activitiesList.filter(a => !ids.has(a.id));
     setActivitiesList(updated);
     localStorage.setItem('activitiesList', JSON.stringify(updated));
   };
@@ -802,9 +807,9 @@ export default function Activities() {
                 variant="outline"
                 size="sm"
                 onClick={handleBulkDeleteByClient}
-                disabled={selectedClient === "All Clients"}
+                disabled={filteredActivities.length === 0}
                 className="border-red-200 text-red-700 hover:bg-red-50 disabled:opacity-50"
-                title="Delete all activities for the selected client"
+                title="Delete all activities for the selected client or all filtered"
               >
                 <Trash2 className="h-4 w-4 mr-1" />
                 Delete Activities
