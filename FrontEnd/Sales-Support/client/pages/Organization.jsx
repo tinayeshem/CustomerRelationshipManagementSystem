@@ -157,6 +157,7 @@ export default function Organization() {
     contactSurname: "",
     contactRole: "",
     contactPhone: "",
+    responsibleMembers: [],
     // Legacy fields for migration compatibility
     category: "",
     notes: ""
