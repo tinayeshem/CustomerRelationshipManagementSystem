@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, CheckCircle, ClipboardCheck, Layers, ListChecks, Plus, Settings, Users } from "lucide-react";
+import { Calendar, CheckCircle, ClipboardCheck, Layers, ListChecks, Plus, Settings, Users, History, Clock } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PHASES = ["Initial Contact", "Proposal", "Negotiation", "Contract", "Active", "Renewal", "Terminated"]; // ordered
 const DEFAULT_TEAM_MEMBERS = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
@@ -26,10 +27,14 @@ const getStageBadge = (stage) => {
 };
 
 export default function Projects() {
+  const { user } = useAuth();
   const [projects, setProjects] = useState(() => {
     const saved = localStorage.getItem("projectsData");
     return saved ? JSON.parse(saved) : [];
   });
+  const [auditTrail, setAuditTrail] = useState({});
+  const [selectedProjectAudit, setSelectedProjectAudit] = useState(null);
+  const [showAuditDialog, setShowAuditDialog] = useState(false);
 
   // One-time migration: convert old 4-stage projects and org phases to new 7-phase pipeline
   useEffect(() => {
@@ -200,41 +205,109 @@ export default function Projects() {
     resetCreateForm();
   };
 
-  const setProjectStage = (project, toStage) => {
-    const stageOrder = project.stages.map(s => s.name);
-    const toIdx = stageOrder.indexOf(toStage);
-    if (toIdx === -1) return;
+  const setProjectStage = async (project, toStage) => {
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
 
-    const updated = projects.map(p => {
-      if (p.id !== project.id) return p;
-      const newStages = p.stages.map((s, i) => ({ ...s, completed: i <= toIdx }));
-      return { ...p, stages: newStages, currentStage: stageOrder[toIdx] };
-    });
-    saveProjects(updated);
+    try {
+      // For now, keep the local implementation until backend is connected
+      const stageOrder = project.stages.map(s => s.name);
+      const toIdx = stageOrder.indexOf(toStage);
+      if (toIdx === -1) return;
 
-    const orgs = [...organizations];
-    const orgIdx = orgs.findIndex(o => String(o.id) === String(project.organizationId));
-    if (orgIdx !== -1) {
-      orgs[orgIdx] = { ...orgs[orgIdx], phase: stageOrder[toIdx] };
-      setOrganizations(orgs);
-      localStorage.setItem("organizationData", JSON.stringify(orgs));
-      window.dispatchEvent(new Event("organizationDataUpdated"));
+      const updated = projects.map(p => {
+        if (p.id !== project.id) return p;
+        const newStages = p.stages.map((s, i) => ({ ...s, completed: i <= toIdx }));
+        return { ...p, stages: newStages, currentStage: stageOrder[toIdx] };
+      });
+      saveProjects(updated);
+
+      // Add local audit trail entry
+      const auditEntry = {
+        id: Date.now(),
+        action: 'stage_changed',
+        changedBy: user.name,
+        timestamp: new Date().toLocaleString(),
+        before: { currentStage: project.currentStage },
+        after: { currentStage: toStage },
+        message: `Stage changed from "${project.currentStage}" to "${toStage}"`
+      };
+
+      setAuditTrail(prev => ({
+        ...prev,
+        [project.id]: [...(prev[project.id] || []), auditEntry]
+      }));
+
+      const orgs = [...organizations];
+      const orgIdx = orgs.findIndex(o => String(o.id) === String(project.organizationId));
+      if (orgIdx !== -1) {
+        orgs[orgIdx] = { ...orgs[orgIdx], phase: stageOrder[toIdx] };
+        setOrganizations(orgs);
+        localStorage.setItem("organizationData", JSON.stringify(orgs));
+        window.dispatchEvent(new Event("organizationDataUpdated"));
+      }
+
+      // TODO: When backend is connected, uncomment this:
+      // const response = await fetch(`/api/projects/${project.id}/change-stage`, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ newStage: toStage })
+      // });
+      // if (!response.ok) throw new Error('Failed to update stage');
+    } catch (error) {
+      console.error('Error updating stage:', error);
     }
   };
 
-  const advanceStage = (project) => {
-    const stageOrder = project.stages.map(s => s.name);
-    const idx = stageOrder.indexOf(project.currentStage);
-    if (idx === -1) return;
-    const nextIdx = Math.min(idx + 1, stageOrder.length - 1);
-    setProjectStage(project, stageOrder[nextIdx]);
+  const advanceStage = async (project) => {
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
+
+    try {
+      const stageOrder = project.stages.map(s => s.name);
+      const idx = stageOrder.indexOf(project.currentStage);
+      if (idx === -1) return;
+      const nextIdx = Math.min(idx + 1, stageOrder.length - 1);
+
+      await setProjectStage(project, stageOrder[nextIdx]);
+
+      // TODO: When backend is connected, use this instead:
+      // const response = await fetch(`/api/projects/${project.id}/advance-stage`, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' }
+      // });
+      // if (!response.ok) throw new Error('Failed to advance stage');
+    } catch (error) {
+      console.error('Error advancing stage:', error);
+    }
   };
 
-  const goBackStage = (project) => {
-    const stageOrder = project.stages.map(s => s.name);
-    const idx = stageOrder.indexOf(project.currentStage);
-    if (idx <= 0) return;
-    setProjectStage(project, stageOrder[idx - 1]);
+  const goBackStage = async (project) => {
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
+
+    try {
+      const stageOrder = project.stages.map(s => s.name);
+      const idx = stageOrder.indexOf(project.currentStage);
+      if (idx <= 0) return;
+
+      await setProjectStage(project, stageOrder[idx - 1]);
+
+      // TODO: When backend is connected, use this instead:
+      // const response = await fetch(`/api/projects/${project.id}/go-back-stage`, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' }
+      // });
+      // if (!response.ok) throw new Error('Failed to go back stage');
+    } catch (error) {
+      console.error('Error going back stage:', error);
+    }
   };
 
 
@@ -298,6 +371,24 @@ export default function Projects() {
   };
 
   const projectsForUI = useMemo(() => projects, [projects]);
+
+  // Load audit trail for a specific project
+  const loadAuditTrail = async (projectId) => {
+    try {
+      // For now, use local audit trail
+      setSelectedProjectAudit(auditTrail[projectId] || []);
+      setShowAuditDialog(true);
+
+      // TODO: When backend is connected, use this instead:
+      // const response = await fetch(`/api/projects/${projectId}/audit-trail`);
+      // if (!response.ok) throw new Error('Failed to load audit trail');
+      // const data = await response.json();
+      // setSelectedProjectAudit(data.data || []);
+      // setShowAuditDialog(true);
+    } catch (error) {
+      console.error('Error loading audit trail:', error);
+    }
+  };
 
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
@@ -444,6 +535,10 @@ export default function Projects() {
                 </Button>
                 <Button size="sm" variant="outline" className="border-green-200 text-green-700 hover:bg-green-50" onClick={() => setAddActivityFor(p)}>
                   Add Activity
+                </Button>
+                <Button size="sm" variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => loadAuditTrail(p.id)}>
+                  <History className="h-3 w-3 mr-1" />
+                  History
                 </Button>
               </div>
               <div className="space-y-2">
