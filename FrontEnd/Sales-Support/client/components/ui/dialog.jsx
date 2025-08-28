@@ -1,48 +1,40 @@
 import * as React from "react";
 
+const DialogContext = React.createContext({ open: false, onOpenChange: () => {} });
+
 const Dialog = ({ children, open, onOpenChange }) => {
-  const allowed = new Set([
-    "DialogTrigger",
-    "DialogContent",
-    "DialogHeader",
-    "DialogFooter",
-    "DialogTitle",
-    "DialogDescription",
-  ]);
   return (
-    <>
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
-          const displayName = child.type && child.type.displayName;
-          if (displayName && allowed.has(displayName)) {
-            return React.cloneElement(child, { open, onOpenChange });
-          }
-          return child;
-        }
-        return child;
-      })}
-    </>
+    <DialogContext.Provider value={{ open, onOpenChange }}>
+      {children}
+    </DialogContext.Provider>
   );
 };
 
 const DialogTrigger = React.forwardRef(({ className, children, open, onOpenChange, asChild, ...props }, ref) => {
+  const ctx = React.useContext(DialogContext);
+  const handleOpen = () => (onOpenChange || ctx.onOpenChange) && (onOpenChange || ctx.onOpenChange)(true);
+
   if (asChild && React.isValidElement(children)) {
     return React.cloneElement(children, {
       ref,
-      onClick: () => onOpenChange && onOpenChange(true),
+      onClick: handleOpen,
       ...props
     });
   }
 
   return (
-    <div ref={ref} onClick={() => onOpenChange && onOpenChange(true)} {...props}>
+    <div ref={ref} onClick={handleOpen} {...props}>
       {children}
     </div>
   );
 });
 
 const DialogContent = React.forwardRef(({ className, children, open, onOpenChange, onPointerDownOutside, ...props }, ref) => {
-  if (!open) return null;
+  const ctx = React.useContext(DialogContext);
+  const isOpen = typeof open === "boolean" ? open : ctx.open;
+  const close = () => (onOpenChange || ctx.onOpenChange) && (onOpenChange || ctx.onOpenChange)(false);
+
+  if (!isOpen) return null;
 
   const handleBackdropClick = () => {
     if (onPointerDownOutside) {
@@ -50,7 +42,7 @@ const DialogContent = React.forwardRef(({ className, children, open, onOpenChang
       onPointerDownOutside(event);
       if (event.defaultPrevented) return;
     }
-    onOpenChange && onOpenChange(false);
+    close();
   };
 
   return (
