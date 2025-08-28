@@ -547,12 +547,16 @@ export default function Activities() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="linkedClient">Linked Client *</Label>
-                  <Input
-                    id="linkedClient"
-                    placeholder="Enter client name"
-                    value={newActivity.linkedClient}
-                    onChange={(e) => handleInputChange('linkedClient', e.target.value)}
-                  />
+                  <Select value={newActivity.linkedClient} onValueChange={(value) => handleInputChange('linkedClient', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select organization" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.filter(c => c !== "All Clients").sort().map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Unit Type - Horizontal Radio Buttons */}
