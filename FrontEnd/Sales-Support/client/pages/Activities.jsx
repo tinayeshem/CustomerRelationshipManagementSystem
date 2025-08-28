@@ -541,10 +541,19 @@ export default function Activities() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Activities & Tickets</h1>
-          <p className="text-muted-foreground mt-1">
-            Comprehensive activity tracking and ticket management system
-          </p>
+          {user?.department === 'Support' ? (
+            <>
+              <h1 className="text-3xl font-bold text-foreground">Tickets</h1>
+              <p className="text-muted-foreground mt-1">Comprehensive Ticket Management System</p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold text-foreground">Activities</h1>
+              <p className="text-muted-foreground mt-1">
+                Comprehensive activity tracking and ticket management system
+              </p>
+            </>
+          )}
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => open && setIsDialogOpen(open)}>
           <div className="flex items-center gap-2">
@@ -554,7 +563,7 @@ export default function Activities() {
             <DialogTrigger asChild>
               <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                 <Plus className="h-4 w-4 mr-2" />
-                New Activity
+                {user?.department === 'Support' ? 'New Ticket' : 'New Activity'}
               </Button>
             </DialogTrigger>
           </div>
