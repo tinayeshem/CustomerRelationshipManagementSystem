@@ -1,5 +1,5 @@
 import { useState } from "react";
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -263,17 +263,7 @@ export default function Activities() {
     return stored ? JSON.parse(stored) : [];
   }, []);
 
-  const availableMembersForNew = React.useMemo(() => {
-    const org = organizationsList.find(o => o.organizationName === newActivity.linkedClient);
-    const defaults = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
-    return org?.responsibleMembers?.length ? org.responsibleMembers : defaults;
-  }, [organizationsList, newActivity.linkedClient]);
 
-  const availableMembersForEdit = React.useMemo(() => {
-    const org = organizationsList.find(o => o.organizationName === editActivity.linkedClient);
-    const defaults = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
-    return org?.responsibleMembers?.length ? org.responsibleMembers : defaults;
-  }, [organizationsList, editActivity.linkedClient]);
 
   // Form state for new activity
   const [newActivity, setNewActivity] = useState({
@@ -319,6 +309,18 @@ export default function Activities() {
     premiumSupport: false,
     priority: ""
   });
+
+  const availableMembersForNew = React.useMemo(() => {
+    const org = organizationsList.find(o => o.organizationName === newActivity.linkedClient);
+    const defaults = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
+    return org?.responsibleMembers?.length ? org.responsibleMembers : defaults;
+  }, [organizationsList, newActivity.linkedClient]);
+
+  const availableMembersForEdit = React.useMemo(() => {
+    const org = organizationsList.find(o => o.organizationName === editActivity.linkedClient);
+    const defaults = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
+    return org?.responsibleMembers?.length ? org.responsibleMembers : defaults;
+  }, [organizationsList, editActivity.linkedClient]);
 
   // Filtered activities
   const filteredActivities = activitiesList.filter((activity) => {
