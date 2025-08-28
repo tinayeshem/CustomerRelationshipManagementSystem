@@ -113,39 +113,46 @@ export default function Layout({ children }) {
 
           {/* Navigation */}
           <nav className="flex-1 space-y-2 px-4 py-6 text-white">
-            {navigation.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.href;
+            {navigation
+              .filter((item) => {
+                if (!user) return true;
+                if (user.department === 'Support' && item.name === 'Sales') return false;
+                if (user.department === 'Sales' && item.name === 'Support') return false;
+                return true;
+              })
+              .map((item) => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.href;
 
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  onClick={closeSidebar}
-                  className={cn(
-                    "group flex items-center rounded-lg px-4 py-3 text-sm  font-medium transition-all duration-200 hover:shadow-lg",
-                    isActive
-                      ? "bg-sidebar-accent text-sidebar-primary-foreground shadow-lg border border-light-blue text-white"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  )}
-                >
-                  <Icon
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={closeSidebar}
                     className={cn(
-                      "mr-3 h-5 w-5 transition-colors",
+                      "group flex items-center rounded-lg px-4 py-3 text-sm  font-medium transition-all duration-200 hover:shadow-lg",
                       isActive
-                        ? "text-light-blue"
-                        : "text-sidebar-foreground group-hover:text-light-blue",
+                        ? "bg-sidebar-accent text-sidebar-primary-foreground shadow-lg border border-light-blue text-white"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     )}
-                  />
-                  {item.name}
-                  {isActive && (
-                    <div className="ml-auto">
-                      <div className="h-2 w-2 rounded-full bg-light-blue text-white" />
-                    </div>
-                  )}
-                </Link>
-              );
-            })}
+                  >
+                    <Icon
+                      className={cn(
+                        "mr-3 h-5 w-5 transition-colors",
+                        isActive
+                          ? "text-light-blue"
+                          : "text-sidebar-foreground group-hover:text-light-blue",
+                      )}
+                    />
+                    {item.name}
+                    {isActive && (
+                      <div className="ml-auto">
+                        <div className="h-2 w-2 rounded-full bg-light-blue text-white" />
+                      </div>
+                    )}
+                  </Link>
+                );
+              })}
           </nav>
 
           {/* User Profile & Logout */}
