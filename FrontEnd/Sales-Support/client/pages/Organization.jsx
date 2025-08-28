@@ -406,6 +406,7 @@ export default function Organization() {
         role: editFormData.contactRole,
         phone: editFormData.contactPhone
       },
+      responsibleMembers: editFormData.responsibleMembers,
       notes: editFormData.notes,
       lastUpdated: new Date().toISOString().split('T')[0]
     };
