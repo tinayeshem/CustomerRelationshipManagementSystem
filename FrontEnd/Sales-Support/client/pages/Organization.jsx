@@ -187,27 +187,19 @@ export default function Organization() {
 
   // Load data from API on component mount
   useEffect(() => {
-    loadOrganizations();
+    loadMigratedData();
   }, []);
 
-  const loadOrganizations = async () => {
-    try {
-      setIsMigrationInProgress(true);
-      const organizationsData = await organizationsApi.getAll();
-      setOrganizations(organizationsData);
-      console.log(`Loaded ${organizationsData.length} organizations from API`);
-    } catch (error) {
-      console.error("Failed to load organizations:", error);
-      // Fallback to migration if API fails and migration is needed
-      if (isMigrationNeeded()) {
-        const summary = getMigrationSummary();
-        setMigrationSummary(summary);
-        await performMigration();
-      } else {
-        alert("Failed to load organizations. Please try again or contact support.");
-      }
-    } finally {
-      setIsMigrationInProgress(false);
+  const loadMigratedData = () => {
+    const migratedData = localStorage.getItem('organizationData');
+    if (migratedData) {
+      const parsedData = JSON.parse(migratedData);
+      setOrganizations(parsedData);
+      console.log(`Loaded ${parsedData.length} organizations from storage`);
+    } else if (isMigrationNeeded()) {
+      const summary = getMigrationSummary();
+      setMigrationSummary(summary);
+      performMigration();
     }
   };
 
