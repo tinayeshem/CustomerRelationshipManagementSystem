@@ -14,85 +14,29 @@ import {
   Clock,
   Heart,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
-const teamMembers = [
-  {
-    id: 1,
-    name: "Ana Marić",
-    role: "Senior Sales Manager",
-    department: "Sales",
-    status: "online",
-    avatar: "AM",
-    performance: 95,
-    clientsManaged: 18,
-    currentTasks: 5,
-    weeklyTarget: 12,
-    completedTarget: 10,
-    lastActivity: "2 minutes ago",
-    bgColor: "from-blue-500 to-blue-600",
-  },
-  {
-    id: 2,
-    name: "Marko Petrović",
-    role: "Sales Representative",
-    department: "Sales",
-    status: "busy",
-    avatar: "MP",
-    performance: 88,
-    clientsManaged: 12,
-    currentTasks: 3,
-    weeklyTarget: 8,
-    completedTarget: 7,
-    lastActivity: "15 minutes ago",
-    bgColor: "from-green-500 to-green-600",
-  },
-  {
-    id: 3,
-    name: "Petra Babić",
-    role: "Support Specialist",
-    department: "Support",
-    status: "online",
-    avatar: "PB",
-    performance: 92,
-    clientsManaged: 15,
-    currentTasks: 7,
-    weeklyTarget: 20,
-    completedTarget: 18,
-    lastActivity: "5 minutes ago",
-    bgColor: "from-purple-500 to-purple-600",
-  },
-  {
-    id: 4,
-    name: "Luka Novak",
-    role: "Junior Sales",
-    department: "Sales",
-    status: "away",
-    avatar: "LN",
-    performance: 76,
-    clientsManaged: 6,
-    currentTasks: 2,
-    weeklyTarget: 5,
-    completedTarget: 4,
-    lastActivity: "1 hour ago",
-    bgColor: "from-orange-500 to-orange-600",
-  },
-  {
-    id: 5,
-    name: "Sofia Antić",
-    role: "Support Specialist",
-    department: "Support",
-    status: "online",
-    avatar: "SA",
-    performance: 89,
-    clientsManaged: 12,
-    currentTasks: 4,
-    weeklyTarget: 15,
-    completedTarget: 13,
-    lastActivity: "30 minutes ago",
-    bgColor: "from-pink-500 to-pink-600",
-  },
-];
+// Generate performance metrics for team members
+const generateMemberMetrics = (member, index) => {
+  const performanceMap = { 1: 95, 2: 88, 3: 92, 4: 76, 5: 89 };
+  const clientsMap = { 1: 18, 2: 12, 3: 15, 4: 6, 5: 12 };
+  const tasksMap = { 1: 5, 2: 3, 3: 7, 4: 2, 5: 4 };
+  const weeklyTargetMap = { 1: 12, 2: 8, 3: 20, 4: 5, 5: 15 };
+  const completedTargetMap = { 1: 10, 2: 7, 3: 18, 4: 4, 5: 13 };
+  const statusMap = { 1: "online", 2: "busy", 3: "online", 4: "away", 5: "online" };
+  const lastActivityMap = { 1: "2 minutes ago", 2: "15 minutes ago", 3: "5 minutes ago", 4: "1 hour ago", 5: "30 minutes ago" };
+
+  return {
+    ...member,
+    performance: performanceMap[member.id] || 85,
+    clientsManaged: clientsMap[member.id] || 10,
+    currentTasks: tasksMap[member.id] || 3,
+    weeklyTarget: weeklyTargetMap[member.id] || 10,
+    completedTarget: completedTargetMap[member.id] || 8,
+    status: statusMap[member.id] || "online",
+    lastActivity: lastActivityMap[member.id] || "Recently"
+  };
+};
 
 export default function Teams() {
   const { user, isManager } = useAuth();
