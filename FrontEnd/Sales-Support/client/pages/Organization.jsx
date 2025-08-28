@@ -46,6 +46,7 @@ const organizationCategories = ["All Categories", "County", "Municipality", "Cit
 const statuses = ["All Statuses", "Active", "Expired", "Potential", "Client", "Former Client", "Negotiation in Progress", "Not Contacted", "Rejected"];
 const phases = ["All Phases", "Initial Contact", "Proposal", "Negotiation", "Contract", "Active", "Renewal", "Terminated"];
 const nextPhases = ["All Next Phases", "Follow-up Call", "Proposal Submission", "Contract Signing", "Implementation", "Review Meeting", "Renewal Discussion"];
+const orgTeamMembers = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
 
 const getStatusColor = (status) => {
   switch (status) {
