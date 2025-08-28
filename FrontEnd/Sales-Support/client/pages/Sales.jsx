@@ -1,5 +1,6 @@
 // Sales.jsx
 import { useMemo, useState } from "react";
+import { TEAM_MEMBER_NAMES } from "@/constants/teamMembers";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
@@ -93,7 +94,7 @@ const salesLeads = [
     product: "Port Management",
     created: "2023-12-20",
     nextAction: "2024-01-16",
-    assignee: "Ana Marić",
+    assignee: "Ana Mari��",
     status: "Hot",
     timeSpent: 35,
     lastActivity: "2024-01-15"
