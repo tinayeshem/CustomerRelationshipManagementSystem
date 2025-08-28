@@ -227,7 +227,7 @@ export default function Projects() {
                 <Label>Organization *</Label>
                 <Select value={String(createForm.organizationId)} onValueChange={(v) => setCreateForm({ ...createForm, organizationId: v, assignedMembers: [], selectedActivityIds: [] })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select organization" />
+                    <span>{selectedOrg ? selectedOrg.organizationName : "Select organization"}</span>
                   </SelectTrigger>
                   <SelectContent>
                     {organizations.length === 0 ? (
