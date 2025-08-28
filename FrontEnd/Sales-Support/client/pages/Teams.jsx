@@ -39,7 +39,13 @@ const generateMemberMetrics = (member, index) => {
 };
 
 export default function Teams() {
-  const { user, isManager } = useAuth();
+  const { user, isManager, getAllUsers } = useAuth();
+
+  // Get all registered team members from AuthContext
+  const teamMembers = useMemo(() => {
+    const allUsers = getAllUsers();
+    return allUsers.map((member, index) => generateMemberMetrics(member, index));
+  }, [getAllUsers]);
 
   // Load created teams from localStorage
   const [createdTeams, setCreatedTeams] = useState(() => {
