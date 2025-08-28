@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { useTeamActivityFeed } from "@/hooks/useTeamActivityFeed";
 import {
   Users,
   Activity,
@@ -60,75 +61,7 @@ const quickStats = [
   },
 ];
 
-// Team activities data that will be filtered based on user's department
-const allTeamActivities = [
-  {
-    id: 1,
-    type: "Call",
-    client: "Zagreb Municipality",
-    time: "2 hours ago",
-    status: "completed",
-    icon: Phone,
-    responsiblePerson: "Ana Marić",
-    department: "Sales",
-    teamMembers: ["Ana Marić", "Marko Petrović"],
-  },
-  {
-    id: 2,
-    type: "Email",
-    client: "Sports Club Dinamo",
-    time: "4 hours ago",
-    status: "pending",
-    icon: Mail,
-    responsiblePerson: "Marko Petrović",
-    department: "Sales",
-    teamMembers: ["Marko Petrović"],
-  },
-  {
-    id: 3,
-    type: "Meeting",
-    client: "Split City Council",
-    time: "Tomorrow 9:00",
-    status: "scheduled",
-    icon: Calendar,
-    responsiblePerson: "Ana Marić",
-    department: "Sales",
-    teamMembers: ["Ana Marić", "Luka Novak"],
-  },
-  {
-    id: 4,
-    type: "Support Ticket",
-    client: "Tech Solutions Ltd",
-    time: "1 hour ago",
-    status: "in progress",
-    icon: Settings,
-    responsiblePerson: "Petra Babić",
-    department: "Support",
-    teamMembers: ["Petra Babić"],
-  },
-  {
-    id: 5,
-    type: "Email",
-    client: "Crafters Association Zagreb",
-    time: "3 hours ago",
-    status: "completed",
-    icon: Mail,
-    responsiblePerson: "Petra Babić",
-    department: "Support",
-    teamMembers: ["Petra Babić"],
-  },
-  {
-    id: 6,
-    type: "Call",
-    client: "Pula Municipality",
-    time: "5 hours ago",
-    status: "completed",
-    icon: Phone,
-    responsiblePerson: "Luka Novak",
-    department: "Sales",
-    teamMembers: ["Luka Novak", "Ana Marić"],
-  },
-];
+// Team activities are now loaded dynamically via useTeamActivityFeed hook
 
 // All tasks that will be filtered based on assigned user
 const allUpcomingTasks = [
@@ -191,14 +124,10 @@ const allUpcomingTasks = [
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { teamActivityFeed, hasProjects, userProjects } = useTeamActivityFeed(3);
 
-  // Filter activities based on user's department/team
-  const recentActivities = allTeamActivities
-    .filter(activity =>
-      activity.department === user?.department ||
-      activity.teamMembers.includes(user?.name)
-    )
-    .slice(0, 3); // Show only the 3 most recent
+  // Use real team activities from projects the user is assigned to
+  const recentActivities = teamActivityFeed;
 
   // Filter upcoming tasks to show only tasks assigned to the current user
   const upcomingTasks = allUpcomingTasks
@@ -318,36 +247,51 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentActivities.map((activity) => {
-              const Icon = activity.icon;
-              return (
-                <div
-                  key={activity.id}
-                  className="flex items-center space-x-3 p-3 rounded-lg bg-background/50"
-                >
-                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-cute-primary/20">
-                    <Icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{activity.client}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {activity.type} • {activity.time}
-                    </p>
-                    <p className="text-xs text-blue-600 font-medium">
-                      by {activity.responsiblePerson}
-                    </p>
-                  </div>
-                  <Badge
-                    variant={
-                      activity.status === "completed" ? "default" : "secondary"
-                    }
-                    className="text-xs"
+            {recentActivities.length > 0 ? (
+              recentActivities.map((activity) => {
+                const Icon = activity.icon;
+                return (
+                  <div
+                    key={activity.id}
+                    className="flex items-center space-x-3 p-3 rounded-lg bg-background/50"
                   >
-                    {activity.status}
-                  </Badge>
-                </div>
-              );
-            })}
+                    <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-cute-primary/20">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{activity.client}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {activity.type} • {activity.time}
+                      </p>
+                      <p className="text-xs text-blue-600 font-medium">
+                        by {activity.responsiblePerson}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={
+                        activity.status === "completed" ? "default" : "secondary"
+                      }
+                      className="text-xs"
+                    >
+                      {activity.status}
+                    </Badge>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8">
+                <Activity className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-sm mb-2">No team activities yet</p>
+                <p className="text-xs text-gray-400">
+                  {!hasProjects
+                    ? "You're not assigned to any projects yet"
+                    : userProjects.length > 0
+                      ? "Your teammates haven't created activities for shared projects yet"
+                      : "Join a project to see team activities"
+                  }
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

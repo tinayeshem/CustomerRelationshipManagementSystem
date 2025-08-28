@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TEAM_MEMBERS } from "@/constants/teamMembers";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -50,40 +51,7 @@ export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Existing team members (read-only display)
-  const existingTeamMembers = [
-    {
-      name: "Ana Marić",
-      email: "ana.maric@4ssystem.hr",
-      role: "Senior Sales Manager",
-      department: "Sales",
-      avatar: "AM",
-      bgColor: "from-blue-500 to-blue-600",
-    },
-    {
-      name: "Marko Petrović",
-      email: "marko.petrovic@4ssystem.hr",
-      role: "Sales Representative",
-      department: "Sales",
-      avatar: "MP",
-      bgColor: "from-green-500 to-green-600",
-    },
-    {
-      name: "Petra Babić",
-      email: "petra.babic@4ssystem.hr",
-      role: "Support Specialist",
-      department: "Support",
-      avatar: "PB",
-      bgColor: "from-purple-500 to-purple-600",
-    },
-    {
-      name: "Luka Novak",
-      email: "luka.novak@4ssystem.hr",
-      role: "Junior Sales",
-      department: "Sales",
-      avatar: "LN",
-      bgColor: "from-orange-500 to-orange-600",
-    },
-  ];
+  const existingTeamMembers = TEAM_MEMBERS;
 
   const roles = [
     "Senior Sales Manager",

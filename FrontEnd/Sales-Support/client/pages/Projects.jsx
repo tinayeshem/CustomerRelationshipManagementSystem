@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Calendar, CheckCircle, ClipboardCheck, Layers, ListChecks, Plus, Settings, Users } from "lucide-react";
+import { Calendar, CheckCircle, ClipboardCheck, Layers, ListChecks, Plus, Settings, Users, History, Clock } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PHASES = ["Initial Contact", "Proposal", "Negotiation", "Contract", "Active", "Renewal", "Terminated"]; // ordered
 const DEFAULT_TEAM_MEMBERS = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
@@ -26,10 +27,14 @@ const getStageBadge = (stage) => {
 };
 
 export default function Projects() {
+  const { user } = useAuth();
   const [projects, setProjects] = useState(() => {
     const saved = localStorage.getItem("projectsData");
     return saved ? JSON.parse(saved) : [];
   });
+  const [auditTrail, setAuditTrail] = useState({});
+  const [selectedProjectAudit, setSelectedProjectAudit] = useState(null);
+  const [showAuditDialog, setShowAuditDialog] = useState(false);
 
   // One-time migration: convert old 4-stage projects and org phases to new 7-phase pipeline
   useEffect(() => {
@@ -200,41 +205,109 @@ export default function Projects() {
     resetCreateForm();
   };
 
-  const setProjectStage = (project, toStage) => {
-    const stageOrder = project.stages.map(s => s.name);
-    const toIdx = stageOrder.indexOf(toStage);
-    if (toIdx === -1) return;
+  const setProjectStage = async (project, toStage) => {
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
 
-    const updated = projects.map(p => {
-      if (p.id !== project.id) return p;
-      const newStages = p.stages.map((s, i) => ({ ...s, completed: i <= toIdx }));
-      return { ...p, stages: newStages, currentStage: stageOrder[toIdx] };
-    });
-    saveProjects(updated);
+    try {
+      // For now, keep the local implementation until backend is connected
+      const stageOrder = project.stages.map(s => s.name);
+      const toIdx = stageOrder.indexOf(toStage);
+      if (toIdx === -1) return;
 
-    const orgs = [...organizations];
-    const orgIdx = orgs.findIndex(o => String(o.id) === String(project.organizationId));
-    if (orgIdx !== -1) {
-      orgs[orgIdx] = { ...orgs[orgIdx], phase: stageOrder[toIdx] };
-      setOrganizations(orgs);
-      localStorage.setItem("organizationData", JSON.stringify(orgs));
-      window.dispatchEvent(new Event("organizationDataUpdated"));
+      const updated = projects.map(p => {
+        if (p.id !== project.id) return p;
+        const newStages = p.stages.map((s, i) => ({ ...s, completed: i <= toIdx }));
+        return { ...p, stages: newStages, currentStage: stageOrder[toIdx] };
+      });
+      saveProjects(updated);
+
+      // Add local audit trail entry
+      const auditEntry = {
+        id: Date.now(),
+        action: 'stage_changed',
+        changedBy: user.name,
+        timestamp: new Date().toLocaleString(),
+        before: { currentStage: project.currentStage },
+        after: { currentStage: toStage },
+        message: `Stage changed from "${project.currentStage}" to "${toStage}"`
+      };
+
+      setAuditTrail(prev => ({
+        ...prev,
+        [project.id]: [...(prev[project.id] || []), auditEntry]
+      }));
+
+      const orgs = [...organizations];
+      const orgIdx = orgs.findIndex(o => String(o.id) === String(project.organizationId));
+      if (orgIdx !== -1) {
+        orgs[orgIdx] = { ...orgs[orgIdx], phase: stageOrder[toIdx] };
+        setOrganizations(orgs);
+        localStorage.setItem("organizationData", JSON.stringify(orgs));
+        window.dispatchEvent(new Event("organizationDataUpdated"));
+      }
+
+      // TODO: When backend is connected, uncomment this:
+      // const response = await fetch(`/api/projects/${project.id}/change-stage`, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({ newStage: toStage })
+      // });
+      // if (!response.ok) throw new Error('Failed to update stage');
+    } catch (error) {
+      console.error('Error updating stage:', error);
     }
   };
 
-  const advanceStage = (project) => {
-    const stageOrder = project.stages.map(s => s.name);
-    const idx = stageOrder.indexOf(project.currentStage);
-    if (idx === -1) return;
-    const nextIdx = Math.min(idx + 1, stageOrder.length - 1);
-    setProjectStage(project, stageOrder[nextIdx]);
+  const advanceStage = async (project) => {
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
+
+    try {
+      const stageOrder = project.stages.map(s => s.name);
+      const idx = stageOrder.indexOf(project.currentStage);
+      if (idx === -1) return;
+      const nextIdx = Math.min(idx + 1, stageOrder.length - 1);
+
+      await setProjectStage(project, stageOrder[nextIdx]);
+
+      // TODO: When backend is connected, use this instead:
+      // const response = await fetch(`/api/projects/${project.id}/advance-stage`, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' }
+      // });
+      // if (!response.ok) throw new Error('Failed to advance stage');
+    } catch (error) {
+      console.error('Error advancing stage:', error);
+    }
   };
 
-  const goBackStage = (project) => {
-    const stageOrder = project.stages.map(s => s.name);
-    const idx = stageOrder.indexOf(project.currentStage);
-    if (idx <= 0) return;
-    setProjectStage(project, stageOrder[idx - 1]);
+  const goBackStage = async (project) => {
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
+
+    try {
+      const stageOrder = project.stages.map(s => s.name);
+      const idx = stageOrder.indexOf(project.currentStage);
+      if (idx <= 0) return;
+
+      await setProjectStage(project, stageOrder[idx - 1]);
+
+      // TODO: When backend is connected, use this instead:
+      // const response = await fetch(`/api/projects/${project.id}/go-back-stage`, {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' }
+      // });
+      // if (!response.ok) throw new Error('Failed to go back stage');
+    } catch (error) {
+      console.error('Error going back stage:', error);
+    }
   };
 
 
@@ -298,6 +371,24 @@ export default function Projects() {
   };
 
   const projectsForUI = useMemo(() => projects, [projects]);
+
+  // Load audit trail for a specific project
+  const loadAuditTrail = async (projectId) => {
+    try {
+      // For now, use local audit trail
+      setSelectedProjectAudit(auditTrail[projectId] || []);
+      setShowAuditDialog(true);
+
+      // TODO: When backend is connected, use this instead:
+      // const response = await fetch(`/api/projects/${projectId}/audit-trail`);
+      // if (!response.ok) throw new Error('Failed to load audit trail');
+      // const data = await response.json();
+      // setSelectedProjectAudit(data.data || []);
+      // setShowAuditDialog(true);
+    } catch (error) {
+      console.error('Error loading audit trail:', error);
+    }
+  };
 
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
@@ -434,17 +525,28 @@ export default function Projects() {
               <CardDescription>{p.goal}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className={getStageBadge(p.currentStage)}>{p.currentStage}</Badge>
-                <Button size="sm" variant="outline" className="border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => goBackStage(p)}>
-                  Go Back Stage
-                </Button>
-                <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => advanceStage(p)}>
-                  Advance Stage
-                </Button>
-                <Button size="sm" variant="outline" className="border-green-200 text-green-700 hover:bg-green-50" onClick={() => setAddActivityFor(p)}>
-                  Add Activity
-                </Button>
+              <div className="space-y-3">
+                {/* Current Stage and Stage Controls */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className={getStageBadge(p.currentStage)}>{p.currentStage}</Badge>
+                  <Button size="sm" variant="outline" className="border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => goBackStage(p)}>
+                    Go Back Stage
+                  </Button>
+                  <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => advanceStage(p)}>
+                    Advance Stage
+                  </Button>
+                </div>
+
+                {/* Project Actions */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button size="sm" variant="outline" className="border-green-200 text-green-700 hover:bg-green-50" onClick={() => setAddActivityFor(p)}>
+                    Add Activity
+                  </Button>
+                  <Button size="sm" variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => loadAuditTrail(p.id)}>
+                    <History className="h-3 w-3 mr-1" />
+                    History
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Stages</p>
@@ -563,6 +665,66 @@ export default function Projects() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddActivityFor(null)}>Cancel</Button>
             <Button className="bg-dark-blue hover:bg-dark-blue-hover text-white" onClick={handleAddActivityToProject}>Add Activity</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Audit Trail Dialog */}
+      <Dialog open={showAuditDialog} onOpenChange={setShowAuditDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-dark-blue" />
+              Project History & Audit Trail
+            </DialogTitle>
+            <DialogDescription>Track all changes made to this project</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {selectedProjectAudit && selectedProjectAudit.length > 0 ? (
+              <div className="space-y-3">
+                {selectedProjectAudit.map((entry, index) => (
+                  <Card key={entry.id || index} className="border-l-4 border-blue-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
+                              {entry.action?.replace('_', ' ').toUpperCase() || 'STAGE CHANGED'}
+                            </Badge>
+                            <Clock className="h-3 w-3 text-gray-500" />
+                            <span className="text-sm text-gray-600">{entry.timestamp}</span>
+                          </div>
+
+                          <p className="text-sm font-medium text-gray-900">
+                            {entry.message}
+                          </p>
+
+                          <div className="flex items-center gap-4 text-xs text-gray-600">
+                            <span>Changed by: <strong>{entry.changedBy}</strong></span>
+                            {entry.before && entry.after && (
+                              <span>
+                                {entry.before.currentStage} → {entry.after.currentStage}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <History className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No history available for this project yet.</p>
+                <p className="text-sm text-gray-400 mt-2">Changes will appear here once you start modifying the project stages.</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAuditDialog(false)}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

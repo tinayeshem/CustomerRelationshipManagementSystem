@@ -79,6 +79,20 @@ export const AuthProvider = ({ children }) => {
         isManager: false,
       },
     },
+    "sofia.antic@4ssystem.hr": {
+      password: "SofiaAntic2024!",
+      user: {
+        id: 5,
+        name: "Sofia Antić",
+        email: "sofia.antic@4ssystem.hr",
+        role: "Support Specialist",
+        department: "Support",
+        avatar: "SA",
+        bgColor: "from-pink-500 to-pink-600",
+        permissions: ["dashboard", "activities", "notifications", "support"],
+        isManager: false,
+      },
+    },
   };
 
   // Check for existing authentication on app load

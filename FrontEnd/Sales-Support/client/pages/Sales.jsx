@@ -1,5 +1,6 @@
 // Sales.jsx
 import { useMemo, useState } from "react";
+import { TEAM_MEMBER_NAMES } from "@/constants/teamMembers";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
 } from "@/components/ui/card";
@@ -124,7 +125,7 @@ const regionData = [
   { region: "Others", value: 45000 },
 ];
 
-const teamDirectory = ["Ana Marić", "Marko Petrović", "Petra Babić", "Lana Kovač", "Ivan Horvat"];
+const teamDirectory = TEAM_MEMBER_NAMES;
 
 // ---------------- Helpers ----------------
 const getStatusColor = (status) => {
