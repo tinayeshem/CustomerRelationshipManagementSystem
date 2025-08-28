@@ -312,8 +312,9 @@ export default function Organization() {
     const updatedOrganizations = [...organizations, newOrganization];
     setOrganizations(updatedOrganizations);
     localStorage.setItem('organizationData', JSON.stringify(updatedOrganizations));
+    window.dispatchEvent(new Event('organizationDataUpdated'));
     setIsAddDialogOpen(false);
-    
+
     // Reset form
     setFormData({
       organizationName: "",
@@ -416,6 +417,23 @@ export default function Organization() {
     );
     setOrganizations(updatedOrganizations);
     localStorage.setItem('organizationData', JSON.stringify(updatedOrganizations));
+    window.dispatchEvent(new Event('organizationDataUpdated'));
+
+    // Strict sync: update linked projects to match new phase
+    const savedProjects = localStorage.getItem('projectsData');
+    const projectList = savedProjects ? JSON.parse(savedProjects) : [];
+    if (Array.isArray(projectList) && projectList.length) {
+      const pipeline = phases.slice(1);
+      const phaseIndex = pipeline.indexOf(updatedOrganization.phase);
+      const syncedProjects = projectList.map(p => {
+        if (String(p.organizationId) !== String(updatedOrganization.id)) return p;
+        const newStages = pipeline.map((name, idx) => ({ name, completed: phaseIndex >= 0 ? idx <= phaseIndex : false, order: idx + 1 }));
+        return { ...p, currentStage: updatedOrganization.phase || pipeline[0], stages: newStages };
+      });
+      localStorage.setItem('projectsData', JSON.stringify(syncedProjects));
+      window.dispatchEvent(new Event('projectsDataUpdated'));
+    }
+
     setIsEditDialogOpen(false);
   };
 
