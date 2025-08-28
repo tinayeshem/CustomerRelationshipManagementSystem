@@ -169,7 +169,7 @@ export default function Support() {
     client: "",
     priority: "medium",
     category: "Bug",
-    assignee: "",
+    assignees: [],
     description: "",
     premium: false,
   });
@@ -213,6 +213,16 @@ export default function Support() {
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
       {/* Header */}
+      <div className="flex items-center justify-end mb-4">
+        <Button
+          onClick={() => setIsRegisterDialogOpen(true)}
+          className="bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Register Ticket
+        </Button>
+      </div>
+
       <div className="text-center mb-8">
         <div className="flex items-center justify-center mb-4">
           <div className="relative">
@@ -337,14 +347,6 @@ export default function Support() {
               <BarChart3 className="h-6 w-6" />
               <span className="text-sm">Performance Report</span>
               <Badge className="bg-green-700 text-white">Live</Badge>
-            </Button>
-
-            <Button
-              onClick={() => setIsRegisterDialogOpen(true)}
-              className="h-20 flex-col space-y-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
-            >
-              <Plus className="h-6 w-6" />
-              <span className="text-sm">Register Ticket</span>
             </Button>
           </div>
         </CardContent>
@@ -738,31 +740,40 @@ export default function Support() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="ticket-assignee">Assignee *</Label>
-                <Select value={newTicket.assignee} onValueChange={(val) => setNewTicket(v => ({...v, assignee: val}))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select assignee" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TEAM_MEMBERS.map(m => (
-                      <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Assignees *</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {TEAM_MEMBERS.map(m => (
+                    <label key={m.name} className="flex items-center space-x-2 p-2 rounded bg-background/50">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                        checked={Array.isArray(newTicket.assignees) ? newTicket.assignees.includes(m.name) : false}
+                        onChange={(e) => {
+                          const current = Array.isArray(newTicket.assignees) ? newTicket.assignees : [];
+                          const updated = e.target.checked
+                            ? [...current, m.name]
+                            : current.filter(n => n !== m.name);
+                          setNewTicket(v => ({...v, assignees: updated}));
+                        }}
+                      />
+                      <span className="text-sm">{m.name}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="ticket-priority">Priority</Label>
                 <Select value={newTicket.priority} onValueChange={(val) => setNewTicket(v => ({...v, priority: val}))}>
-                  <SelectTrigger>
+                  <SelectTrigger className={newTicket.priority ? getPriorityColor(newTicket.priority) + " bg-opacity-20" : ""}>
                     <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="urgent">Urgent</SelectItem>
-                    <SelectItem value="high">High</SelectItem>
-                    <SelectItem value="medium">Medium</SelectItem>
-                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="urgent" className={getPriorityColor("urgent") + " hover:opacity-90"}>Urgent</SelectItem>
+                    <SelectItem value="high" className={getPriorityColor("high") + " hover:opacity-90"}>High</SelectItem>
+                    <SelectItem value="medium" className={getPriorityColor("medium") + " hover:opacity-90"}>Medium</SelectItem>
+                    <SelectItem value="low" className={getPriorityColor("low") + " hover:opacity-90"}>Low</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -793,8 +804,8 @@ export default function Support() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsRegisterDialogOpen(false)}>Cancel</Button>
             <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
-              if (!newTicket.title || !newTicket.client || !newTicket.assignee) {
-                alert("Please fill in title, client and assignee");
+              if (!newTicket.title || !newTicket.client || !Array.isArray(newTicket.assignees) || newTicket.assignees.length === 0) {
+                alert("Please fill in title, client and at least one assignee");
                 return;
               }
               try {
@@ -810,7 +821,7 @@ export default function Support() {
                   unitType: 'Government',
                   date: now.toISOString().split('T')[0],
                   time: now.toTimeString().slice(0,5),
-                  responsible: [newTicket.assignee],
+                  responsible: newTicket.assignees,
                   status: 'To Do',
                   deadline: '',
                   reminderDate: '',
@@ -828,7 +839,7 @@ export default function Support() {
                 localStorage.setItem('activitiesList', JSON.stringify(updated));
                 window.dispatchEvent(new Event('activitiesListUpdated'));
                 setIsRegisterDialogOpen(false);
-                setNewTicket({ title: '', client: '', priority: 'medium', category: 'Bug', assignee: '', description: '', premium: false });
+                setNewTicket({ title: '', client: '', priority: 'medium', category: 'Bug', assignees: [], description: '', premium: false });
                 alert('Ticket registered successfully');
               } catch (e) {
                 console.error('Failed to register ticket', e);
