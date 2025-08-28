@@ -76,6 +76,32 @@ export default function Projects() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Cross-page sync listeners: reload local storage updates made elsewhere
+  useEffect(() => {
+    const reloadProjects = () => {
+      const saved = localStorage.getItem("projectsData");
+      setProjects(saved ? JSON.parse(saved) : []);
+    };
+    const reloadOrgs = () => {
+      const saved = localStorage.getItem("organizationData");
+      setOrganizations(saved ? JSON.parse(saved) : []);
+    };
+    const onVisibility = () => {
+      if (!document.hidden) {
+        reloadProjects();
+        reloadOrgs();
+      }
+    };
+    window.addEventListener("projectsDataUpdated", reloadProjects);
+    window.addEventListener("organizationDataUpdated", reloadOrgs);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("projectsDataUpdated", reloadProjects);
+      window.removeEventListener("organizationDataUpdated", reloadOrgs);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, []);
+
   // Create Project dialog state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   useEffect(() => {
@@ -181,11 +207,10 @@ export default function Projects() {
     const orgs = [...organizations];
     const orgIdx = orgs.findIndex(o => String(o.id) === String(project.organizationId));
     if (orgIdx !== -1) {
-      const prev = orgs[orgIdx].phase;
       orgs[orgIdx] = { ...orgs[orgIdx], phase: stageOrder[toIdx] };
       setOrganizations(orgs);
       localStorage.setItem("organizationData", JSON.stringify(orgs));
-      if (prev !== stageOrder[toIdx]) logPhaseChange(orgs[orgIdx], prev, stageOrder[toIdx]);
+      window.dispatchEvent(new Event("organizationDataUpdated"));
     }
   };
 
@@ -204,31 +229,6 @@ export default function Projects() {
     setProjectStage(project, stageOrder[idx - 1]);
   };
 
-  const logPhaseChange = (org, from, to) => {
-    const saved = localStorage.getItem("activitiesList");
-    const list = saved ? JSON.parse(saved) : [];
-    const id = (list?.[0]?.id || 0) + list.length + 1;
-    const activity = {
-      id,
-      activityType: "Email",
-      category: "Sales",
-      linkedClient: org.organizationName,
-      unitType: org.unitType || "Independent",
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toTimeString().slice(0,5),
-      responsible: org.responsibleMembers || [],
-      status: "Done",
-      notes: `Phase changed from ${from || 'N/A'} to ${to}`,
-      priority: "Low",
-      attachments: [],
-      costPerActivity: 0,
-      premiumSupport: false,
-      activityLog: [ { user: org.responsibleMembers || [], action: "Phase Change", timestamp: new Date().toLocaleString() } ]
-    };
-    const updated = [activity, ...list];
-    setActivities(updated);
-    localStorage.setItem("activitiesList", JSON.stringify(updated));
-  };
 
   // Add Next Activity Dialog per project
   const [addActivityFor, setAddActivityFor] = useState(null); // project or null
