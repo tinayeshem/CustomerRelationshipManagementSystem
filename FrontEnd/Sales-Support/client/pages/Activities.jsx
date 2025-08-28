@@ -150,6 +150,7 @@ const clientAddresses = {
 // Enhanced filter and reference data
 const activityTypes = ["All Types", "Call", "Email", "Online Meeting", "In-person Meeting"];
 const categories = ["All Categories", "Sales", "Support"];
+const supportTicketCategories = ["All Categories", "Bug", "Question", "Feature", "Training"];
 const statuses = ["All Statuses", "To Do", "In Progress", "Done"];
 const teamMembers = ["All Members", "Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
 const priorities = ["All Priorities", "Low", "Medium", "High", "Urgent"];
@@ -267,6 +268,7 @@ export default function Activities() {
   const [selectedClient, setSelectedClient] = useState("All Clients");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [selectedPremiumClient, setSelectedPremiumClient] = useState("All");
 
 
   // Dynamic clients list based on organizations + activities
@@ -332,6 +334,16 @@ export default function Activities() {
 
   const { user, getAllUsers } = useAuth();
 
+  React.useEffect(() => {
+    if (user?.department === 'Support' && selectedType === "All Types") {
+      setSelectedType("All Categories");
+      setSelectedPremiumClient((prev) => prev || "All");
+    }
+    if (user?.department !== 'Support' && selectedType === "All Categories") {
+      setSelectedType("All Types");
+    }
+  }, [user?.department]);
+
   const availableMembersForNew = React.useMemo(() => {
     const org = organizationsList.find(o => o.organizationName === newActivity.linkedClient);
     const defaults = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
@@ -382,12 +394,20 @@ export default function Activities() {
 
   // Filtered activities
   const filteredActivities = roleFilteredActivities.filter((activity) => {
+    const isSupport = user?.department === "Support";
     const responsibleString = Array.isArray(activity.responsible) ? activity.responsible.join(", ") : activity.responsible;
     const matchesSearch = activity.linkedClient.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          responsibleString.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          activity.notes.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = selectedType === "All Types" || activity.activityType === selectedType;
-    const matchesCategory = selectedCategory === "All Categories" || activity.category === selectedCategory;
+    const matchesType = isSupport
+      ? (selectedType === "All Categories" || activity.ticketType === selectedType)
+      : (selectedType === "All Types" || activity.activityType === selectedType);
+    const matchesCategory = isSupport
+      ? true
+      : (selectedCategory === "All Categories" || activity.category === selectedCategory);
+    const matchesPremium = isSupport
+      ? (selectedPremiumClient === "All" || activity.premiumSupport === (selectedPremiumClient === "Premium"))
+      : true;
     const matchesStatus = selectedStatus === "All Statuses" || activity.status === selectedStatus;
     const matchesMember = selectedMember === "All Members" || responsibleString.includes(selectedMember);
     const matchesPriority = selectedPriority === "All Priorities" || activity.priority === selectedPriority;
@@ -395,7 +415,7 @@ export default function Activities() {
     const matchesFromDate = !fromDate || activity.date >= fromDate;
     const matchesToDate = !toDate || activity.date <= toDate;
 
-    return matchesSearch && matchesType && matchesCategory && matchesStatus &&
+    return matchesSearch && matchesType && matchesCategory && matchesPremium && matchesStatus &&
            matchesMember && matchesPriority && matchesClient && matchesFromDate && matchesToDate;
   });
 
@@ -523,7 +543,12 @@ export default function Activities() {
 
   const resetFilters = () => {
     setSearchTerm("");
-    setSelectedType("All Types");
+    if (user?.department === 'Support') {
+      setSelectedType("All Categories");
+      setSelectedPremiumClient("All");
+    } else {
+      setSelectedType("All Types");
+    }
     setSelectedCategory("All Categories");
     setSelectedStatus("All Statuses");
     setSelectedMember("All Members");
@@ -1032,31 +1057,44 @@ export default function Activities() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Select value={selectedType} onValueChange={setSelectedType}>
                 <SelectTrigger className="bg-background/80">
-                  <SelectValue placeholder="Activity Type" />
+                  <SelectValue placeholder={user?.department === 'Support' ? "Category" : "Activity Type"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {activityTypes.map((type) => (
+                  {(user?.department === 'Support' ? supportTicketCategories : activityTypes).map((type) => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className={`bg-background/80 ${selectedCategory !== "All Categories" ? getCategoryColor(selectedCategory) : ""}`}>
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem
-                      key={category}
-                      value={category}
-                      className={category !== "All Categories" ? getCategoryColor(category) + " hover:opacity-90" : "hover:bg-gray-50"}
-                    >
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {user?.department === 'Support' ? (
+                <Select value={selectedPremiumClient} onValueChange={setSelectedPremiumClient}>
+                  <SelectTrigger className="bg-background/80">
+                    <SelectValue placeholder="Premium Clients" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["All", "Premium", "Not Premium"].map((opt) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className={`bg-background/80 ${selectedCategory !== "All Categories" ? getCategoryColor(selectedCategory) : ""}`}>
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem
+                        key={category}
+                        value={category}
+                        className={category !== "All Categories" ? getCategoryColor(category) + " hover:opacity-90" : "hover:bg-gray-50"}
+                      >
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger className={`bg-background/80 ${selectedStatus !== "All Statuses" ? getStatusColor(selectedStatus) : ""}`}>
