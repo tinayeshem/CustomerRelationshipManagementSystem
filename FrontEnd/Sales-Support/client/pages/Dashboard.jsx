@@ -192,14 +192,10 @@ const allUpcomingTasks = [
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { teamActivityFeed, hasProjects, userProjects } = useTeamActivityFeed(3);
 
-  // Filter activities based on user's department/team
-  const recentActivities = allTeamActivities
-    .filter(activity =>
-      activity.department === user?.department ||
-      activity.teamMembers.includes(user?.name)
-    )
-    .slice(0, 3); // Show only the 3 most recent
+  // Use real team activities from projects the user is assigned to
+  const recentActivities = teamActivityFeed;
 
   // Filter upcoming tasks to show only tasks assigned to the current user
   const upcomingTasks = allUpcomingTasks
