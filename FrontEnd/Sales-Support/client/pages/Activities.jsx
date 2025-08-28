@@ -310,17 +310,31 @@ export default function Activities() {
     priority: ""
   });
 
+  const { getAllUsers } = require("@/contexts/AuthContext").useAuth();
+
   const availableMembersForNew = React.useMemo(() => {
     const org = organizationsList.find(o => o.organizationName === newActivity.linkedClient);
     const defaults = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
-    return org?.responsibleMembers?.length ? org.responsibleMembers : defaults;
-  }, [organizationsList, newActivity.linkedClient]);
+    let allUsers = [];
+    try {
+      allUsers = (getAllUsers?.() || []).map(u => u?.name).filter(Boolean);
+    } catch {}
+    const base = allUsers.length ? allUsers : defaults;
+    const orgMembers = Array.isArray(org?.responsibleMembers) ? org.responsibleMembers : [];
+    return Array.from(new Set([...(orgMembers || []), ...base]));
+  }, [organizationsList, newActivity.linkedClient, getAllUsers]);
 
   const availableMembersForEdit = React.useMemo(() => {
     const org = organizationsList.find(o => o.organizationName === editActivity.linkedClient);
     const defaults = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
-    return org?.responsibleMembers?.length ? org.responsibleMembers : defaults;
-  }, [organizationsList, editActivity.linkedClient]);
+    let allUsers = [];
+    try {
+      allUsers = (getAllUsers?.() || []).map(u => u?.name).filter(Boolean);
+    } catch {}
+    const base = allUsers.length ? allUsers : defaults;
+    const orgMembers = Array.isArray(org?.responsibleMembers) ? org.responsibleMembers : [];
+    return Array.from(new Set([...(orgMembers || []), ...base]));
+  }, [organizationsList, editActivity.linkedClient, getAllUsers]);
 
   // Filtered activities
   const filteredActivities = activitiesList.filter((activity) => {
