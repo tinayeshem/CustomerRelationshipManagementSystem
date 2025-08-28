@@ -661,6 +661,66 @@ export default function Projects() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Audit Trail Dialog */}
+      <Dialog open={showAuditDialog} onOpenChange={setShowAuditDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-dark-blue" />
+              Project History & Audit Trail
+            </DialogTitle>
+            <DialogDescription>Track all changes made to this project</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {selectedProjectAudit && selectedProjectAudit.length > 0 ? (
+              <div className="space-y-3">
+                {selectedProjectAudit.map((entry, index) => (
+                  <Card key={entry.id || index} className="border-l-4 border-blue-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-blue-50 text-blue-800 border-blue-200">
+                              {entry.action?.replace('_', ' ').toUpperCase() || 'STAGE CHANGED'}
+                            </Badge>
+                            <Clock className="h-3 w-3 text-gray-500" />
+                            <span className="text-sm text-gray-600">{entry.timestamp}</span>
+                          </div>
+
+                          <p className="text-sm font-medium text-gray-900">
+                            {entry.message}
+                          </p>
+
+                          <div className="flex items-center gap-4 text-xs text-gray-600">
+                            <span>Changed by: <strong>{entry.changedBy}</strong></span>
+                            {entry.before && entry.after && (
+                              <span>
+                                {entry.before.currentStage} → {entry.after.currentStage}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <History className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No history available for this project yet.</p>
+                <p className="text-sm text-gray-400 mt-2">Changes will appear here once you start modifying the project stages.</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAuditDialog(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
