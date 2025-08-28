@@ -15,6 +15,7 @@ import Teams from "./pages/Teams";
 import Activities from "./pages/Activities";
 import Organization from "./pages/Organization";
 import Reports from "./pages/Reports";
+import Projects from "./pages/Projects";
 import AIAdvisor from "./pages/AIAdvisor";
 import Support from "./pages/Support";
 import Sales from "./pages/Sales";
