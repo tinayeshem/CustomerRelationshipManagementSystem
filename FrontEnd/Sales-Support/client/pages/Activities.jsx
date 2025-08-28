@@ -311,7 +311,7 @@ export default function Activities() {
     priority: ""
   });
 
-  const { getAllUsers } = useAuth();
+  const { user, getAllUsers } = useAuth();
 
   const availableMembersForNew = React.useMemo(() => {
     const org = organizationsList.find(o => o.organizationName === newActivity.linkedClient);
@@ -337,8 +337,32 @@ export default function Activities() {
     return Array.from(new Set([...(orgMembers || []), ...base]));
   }, [organizationsList, editActivity.linkedClient, getAllUsers]);
 
+  // Role-based base filtering
+  const supportMemberNames = React.useMemo(() => {
+    try {
+      return (getAllUsers?.() || []).filter(u => u?.department === "Support").map(u => u.name);
+    } catch {
+      return ["Petra Babić", "Sofia Antić"]; // fallback
+    }
+  }, [getAllUsers]);
+
+  const roleFilteredActivities = React.useMemo(() => {
+    const isTicket = (a) => a?.isTicket === true || !!a?.ticketType;
+    const hasSupportAssignee = (a) => {
+      const resp = Array.isArray(a.responsible) ? a.responsible : (a.responsible ? [a.responsible] : []);
+      return resp.some(r => supportMemberNames.includes(r));
+    };
+    if (user?.department === "Support") {
+      return activitiesList.filter(a => isTicket(a) && hasSupportAssignee(a));
+    }
+    if (user?.department === "Sales") {
+      return activitiesList.filter(a => !isTicket(a));
+    }
+    return activitiesList;
+  }, [activitiesList, user?.department, supportMemberNames]);
+
   // Filtered activities
-  const filteredActivities = activitiesList.filter((activity) => {
+  const filteredActivities = roleFilteredActivities.filter((activity) => {
     const responsibleString = Array.isArray(activity.responsible) ? activity.responsible.join(", ") : activity.responsible;
     const matchesSearch = activity.linkedClient.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          responsibleString.toLowerCase().includes(searchTerm.toLowerCase()) ||
