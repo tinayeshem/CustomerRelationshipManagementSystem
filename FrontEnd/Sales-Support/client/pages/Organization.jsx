@@ -758,6 +758,30 @@ export default function Organization() {
                         </div>
                       </div>
 
+                      <div className="space-y-3 col-span-2">
+                        <Label>Responsible Members</Label>
+                        <div className="grid grid-cols-2 gap-3">
+                          {orgTeamMembers.map((member) => (
+                            <div key={member} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`org-resp-${member.replace(' ', '-').toLowerCase()}`}
+                                checked={Array.isArray(formData.responsibleMembers) ? formData.responsibleMembers.includes(member) : false}
+                                onChange={(e) => {
+                                  const current = Array.isArray(formData.responsibleMembers) ? formData.responsibleMembers : [];
+                                  const updated = e.target.checked ? [...current, member] : current.filter(m => m !== member);
+                                  setFormData({ ...formData, responsibleMembers: updated });
+                                }}
+                                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                              />
+                              <Label htmlFor={`org-resp-${member.replace(' ', '-').toLowerCase()}`} className="text-sm font-medium">
+                                {member}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
                       <div className="space-y-2 col-span-2">
                         <Label htmlFor="address">Address</Label>
                         <Input
