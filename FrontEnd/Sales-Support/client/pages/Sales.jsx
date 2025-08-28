@@ -94,7 +94,7 @@ const salesLeads = [
     product: "Port Management",
     created: "2023-12-20",
     nextAction: "2024-01-16",
-    assignee: "Ana Mari��",
+    assignee: "Ana Marić",
     status: "Hot",
     timeSpent: 35,
     lastActivity: "2024-01-15"
@@ -125,7 +125,7 @@ const regionData = [
   { region: "Others", value: 45000 },
 ];
 
-const teamDirectory = ["Ana Marić", "Marko Petrović", "Petra Babić", "Lana Kovač", "Ivan Horvat"];
+const teamDirectory = TEAM_MEMBER_NAMES;
 
 // ---------------- Helpers ----------------
 const getStatusColor = (status) => {
