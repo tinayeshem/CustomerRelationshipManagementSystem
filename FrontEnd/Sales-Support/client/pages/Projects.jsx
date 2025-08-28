@@ -230,9 +230,13 @@ export default function Projects() {
                     <SelectValue placeholder="Select organization" />
                   </SelectTrigger>
                   <SelectContent>
-                    {organizations.map((o) => (
-                      <SelectItem key={o.id} value={String(o.id)}>{o.organizationName}</SelectItem>
-                    ))}
+                    {organizations.length === 0 ? (
+                      <div className="px-2 py-2 text-sm text-muted-foreground">No organizations found</div>
+                    ) : (
+                      organizations.map((o) => (
+                        <SelectItem key={o.id} value={String(o.id)}>{o.organizationName}</SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
