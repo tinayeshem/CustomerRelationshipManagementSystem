@@ -80,6 +80,18 @@ export default function Login({ onLogin }) {
         bgColor: "from-orange-500 to-orange-600",
       },
     },
+    "sofia.antic@4ssystem.hr": {
+      password: "SofiaAntic2024!",
+      user: {
+        id: 5,
+        name: "Sofia Antić",
+        email: "sofia.antic@4ssystem.hr",
+        role: "Support Specialist",
+        department: "Support",
+        avatar: "SA",
+        bgColor: "from-pink-500 to-pink-600",
+      },
+    },
   };
 
   const handleInputChange = (e) => {
