@@ -97,35 +97,20 @@ const supportTickets = [
   }
 ];
 
-const teamMembers = [
-  {
-    name: "Ana Marić",
-    role: "Senior Support Engineer",
-    activeTickets: 5,
-    resolvedToday: 3,
-    avgResolutionTime: "2.4h",
-    rating: 4.8,
-    bonusProgress: 85
-  },
-  {
-    name: "Marko Petrović",
-    role: "Support Engineer",
-    activeTickets: 7,
-    resolvedToday: 2,
-    avgResolutionTime: "3.1h",
-    rating: 4.6,
-    bonusProgress: 72
-  },
-  {
-    name: "Petra Babić",
-    role: "Support Specialist",
-    activeTickets: 4,
-    resolvedToday: 4,
-    avgResolutionTime: "1.8h",
-    rating: 4.9,
-    bonusProgress: 94
-  }
-];
+const teamMembers = TEAM_MEMBERS.map((member, index) => {
+  const supportData = [
+    { role: "Senior Support Engineer", activeTickets: 5, resolvedToday: 3, avgResolutionTime: "2.4h", rating: 4.8, bonusProgress: 85 },
+    { role: "Support Engineer", activeTickets: 7, resolvedToday: 2, avgResolutionTime: "3.1h", rating: 4.6, bonusProgress: 72 },
+    { role: "Support Specialist", activeTickets: 4, resolvedToday: 4, avgResolutionTime: "1.8h", rating: 4.9, bonusProgress: 94 },
+    { role: "Junior Support", activeTickets: 3, resolvedToday: 2, avgResolutionTime: "2.8h", rating: 4.5, bonusProgress: 68 },
+    { role: "Support Specialist", activeTickets: 6, resolvedToday: 3, avgResolutionTime: "2.2h", rating: 4.7, bonusProgress: 79 }
+  ];
+
+  return {
+    name: member.name,
+    ...supportData[index]
+  };
+});
 
 const getPriorityColor = (priority) => {
   switch (priority) {
