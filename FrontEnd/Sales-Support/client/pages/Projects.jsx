@@ -9,17 +9,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Calendar, CheckCircle, ClipboardCheck, Layers, ListChecks, Plus, Settings, Users } from "lucide-react";
 
-const defaultStages = ["Meeting", "Call", "Negotiation", "Contract"]; // ordered
+const PHASES = ["Initial Contact", "Proposal", "Negotiation", "Contract", "Active", "Renewal", "Terminated"]; // ordered
 const DEFAULT_TEAM_MEMBERS = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
 
 const getStageBadge = (stage) => {
   switch (stage) {
-    case "Meeting": return "bg-blue-100 text-blue-800 border-blue-200";
-    case "Call": return "bg-cyan-100 text-cyan-800 border-cyan-200";
+    case "Initial Contact": return "bg-blue-100 text-blue-800 border-blue-200";
+    case "Proposal": return "bg-cyan-100 text-cyan-800 border-cyan-200";
     case "Negotiation": return "bg-yellow-100 text-yellow-800 border-yellow-200";
     case "Contract": return "bg-green-100 text-green-800 border-green-200";
-    case "Implementation": return "bg-purple-100 text-purple-800 border-purple-200";
-    case "Review": return "bg-slate-100 text-slate-800 border-slate-200";
+    case "Active": return "bg-purple-100 text-purple-800 border-purple-200";
+    case "Renewal": return "bg-teal-100 text-teal-800 border-teal-200";
+    case "Terminated": return "bg-red-100 text-red-800 border-red-200";
     default: return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
@@ -52,7 +53,7 @@ export default function Projects() {
     organizationId: "",
     goal: "",
     notes: "",
-    stages: defaultStages.map((s, i) => ({ name: s, completed: i < 0 })),
+    stages: PHASES.map((s) => ({ name: s, completed: false })),
     assignedMembers: [],
     selectedActivityIds: []
   });
@@ -84,7 +85,7 @@ export default function Projects() {
     organizationId: "",
     goal: "",
     notes: "",
-    stages: defaultStages.map((s) => ({ name: s, completed: false })),
+    stages: PHASES.map((s) => ({ name: s, completed: false })),
     assignedMembers: [],
     selectedActivityIds: []
   });
@@ -96,6 +97,7 @@ export default function Projects() {
     }
     const org = organizations.find(o => String(o.id) === String(createForm.organizationId));
     const id = Date.now();
+    const currentFromOrg = org?.phase && PHASES.includes(org.phase) ? org.phase : PHASES[0];
     const project = {
       id,
       name: createForm.name,
@@ -103,8 +105,8 @@ export default function Projects() {
       organizationName: org?.organizationName,
       goal: createForm.goal,
       notes: createForm.notes,
-      stages: createForm.stages.map((s, idx) => ({ ...s, order: idx + 1 })),
-      currentStage: createForm.stages[0]?.name || "Meeting",
+      stages: PHASES.map((s, idx) => ({ name: s, completed: false, order: idx + 1 })),
+      currentStage: currentFromOrg,
       assignedMembers: createForm.assignedMembers,
       activityIds: [...createForm.selectedActivityIds],
       createdAt: new Date().toISOString()
@@ -128,18 +130,68 @@ export default function Projects() {
     resetCreateForm();
   };
 
+  const setProjectStage = (project, toStage) => {
+    const stageOrder = project.stages.map(s => s.name);
+    const toIdx = stageOrder.indexOf(toStage);
+    if (toIdx === -1) return;
+
+    const updated = projects.map(p => {
+      if (p.id !== project.id) return p;
+      const newStages = p.stages.map((s, i) => ({ ...s, completed: i <= toIdx }));
+      return { ...p, stages: newStages, currentStage: stageOrder[toIdx] };
+    });
+    saveProjects(updated);
+
+    const orgs = [...organizations];
+    const orgIdx = orgs.findIndex(o => String(o.id) === String(project.organizationId));
+    if (orgIdx !== -1) {
+      const prev = orgs[orgIdx].phase;
+      orgs[orgIdx] = { ...orgs[orgIdx], phase: stageOrder[toIdx] };
+      setOrganizations(orgs);
+      localStorage.setItem("organizationData", JSON.stringify(orgs));
+      if (prev !== stageOrder[toIdx]) logPhaseChange(orgs[orgIdx], prev, stageOrder[toIdx]);
+    }
+  };
+
   const advanceStage = (project) => {
     const stageOrder = project.stages.map(s => s.name);
     const idx = stageOrder.indexOf(project.currentStage);
     if (idx === -1) return;
     const nextIdx = Math.min(idx + 1, stageOrder.length - 1);
+    setProjectStage(project, stageOrder[nextIdx]);
+  };
 
-    const updated = projects.map(p => {
-      if (p.id !== project.id) return p;
-      const newStages = p.stages.map((s, i) => i <= idx ? { ...s, completed: true } : s);
-      return { ...p, stages: newStages, currentStage: stageOrder[nextIdx] };
-    });
-    saveProjects(updated);
+  const goBackStage = (project) => {
+    const stageOrder = project.stages.map(s => s.name);
+    const idx = stageOrder.indexOf(project.currentStage);
+    if (idx <= 0) return;
+    setProjectStage(project, stageOrder[idx - 1]);
+  };
+
+  const logPhaseChange = (org, from, to) => {
+    const saved = localStorage.getItem("activitiesList");
+    const list = saved ? JSON.parse(saved) : [];
+    const id = (list?.[0]?.id || 0) + list.length + 1;
+    const activity = {
+      id,
+      activityType: "Email",
+      category: "Sales",
+      linkedClient: org.organizationName,
+      unitType: org.unitType || "Independent",
+      date: new Date().toISOString().split('T')[0],
+      time: new Date().toTimeString().slice(0,5),
+      responsible: org.responsibleMembers || [],
+      status: "Done",
+      notes: `Phase changed from ${from || 'N/A'} to ${to}`,
+      priority: "Low",
+      attachments: [],
+      costPerActivity: 0,
+      premiumSupport: false,
+      activityLog: [ { user: org.responsibleMembers || [], action: "Phase Change", timestamp: new Date().toLocaleString() } ]
+    };
+    const updated = [activity, ...list];
+    setActivities(updated);
+    localStorage.setItem("activitiesList", JSON.stringify(updated));
   };
 
   // Add Next Activity Dialog per project
@@ -252,11 +304,11 @@ export default function Projects() {
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-blue-800 flex items-center gap-2"><Layers className="h-4 w-4" /> Stages</h3>
                   <div className="space-y-2">
-                    {createForm.stages.map((s, idx) => (
-                      <div key={s.name} className="flex items-center justify-between p-2 rounded bg-blue-50">
+                    {PHASES.map((name, idx) => (
+                      <div key={name} className="flex items-center justify-between p-2 rounded bg-blue-50">
                         <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={getStageBadge(s.name)}>{idx + 1}</Badge>
-                          <span className="text-sm">{s.name}</span>
+                          <Badge variant="outline" className={getStageBadge(name)}>{idx + 1}</Badge>
+                          <span className="text-sm">{name}</span>
                         </div>
                       </div>
                     ))}
@@ -340,6 +392,9 @@ export default function Projects() {
             <CardContent className="space-y-4">
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className={getStageBadge(p.currentStage)}>{p.currentStage}</Badge>
+                <Button size="sm" variant="outline" className="border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => goBackStage(p)}>
+                  Go Back Stage
+                </Button>
                 <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => advanceStage(p)}>
                   Advance Stage
                 </Button>
@@ -351,9 +406,9 @@ export default function Projects() {
                 <p className="text-xs text-muted-foreground">Stages</p>
                 <div className="flex flex-wrap gap-2">
                   {p.stages.map((s, idx) => (
-                    <Badge key={idx} variant="outline" className={s.completed ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"}>
+                    <button key={s.name} className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold ${s.completed ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"}`} onClick={() => setProjectStage(p, s.name)}>
                       {idx + 1}. {s.name}
-                    </Badge>
+                    </button>
                   ))}
                 </div>
               </div>
