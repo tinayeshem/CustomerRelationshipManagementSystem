@@ -4,13 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { 
-  AlertTriangle, 
-  Clock, 
-  TrendingUp, 
+import {
+  AlertTriangle,
+  Clock,
+  TrendingUp,
   BarChart3,
   CheckCircle,
   Star,
@@ -26,7 +28,8 @@ import {
   Filter,
   Search,
   User,
-  ExternalLink
+  ExternalLink,
+  Plus
 } from "lucide-react";
 
 // Sample support data with urgency indicators
@@ -160,8 +163,23 @@ export default function Support() {
   const [isOverdueDialogOpen, setIsOverdueDialogOpen] = useState(false);
   const [isPremiumDialogOpen, setIsPremiumDialogOpen] = useState(false);
   const [isPerformanceDialogOpen, setIsPerformanceDialogOpen] = useState(false);
+  const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
+  const [newTicket, setNewTicket] = useState({
+    title: "",
+    client: "",
+    priority: "medium",
+    category: "Bug",
+    assignee: "",
+    description: "",
+    premium: false,
+  });
 
-  const highPriorityTickets = supportTickets.filter(ticket => 
+  const storedOrgs = typeof window !== "undefined" ? localStorage.getItem("organizationData") : null;
+  const orgNames = storedOrgs ? JSON.parse(storedOrgs).map(o => o.organizationName) : [];
+  const defaultClients = ["Zagreb Municipality", "Sports Club Dinamo", "Split City Council", "Tech Solutions Ltd"];
+  const clients = Array.from(new Set([...defaultClients, ...orgNames]));
+
+  const highPriorityTickets = supportTickets.filter(ticket =>
     ticket.priority === "urgent" || ticket.priority === "high"
   );
 
@@ -285,7 +303,7 @@ export default function Support() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button 
+            <Button
               onClick={showHighPriorityTickets}
               className="h-20 flex-col space-y-2 bg-gradient-to-br from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700"
             >
@@ -293,8 +311,8 @@ export default function Support() {
               <span className="text-sm">High Priority Tickets</span>
               <Badge className="bg-red-700 text-white">{highPriorityTickets.length}</Badge>
             </Button>
-            
-            <Button 
+
+            <Button
               onClick={showOverdueItems}
               className="h-20 flex-col space-y-2 bg-gradient-to-br from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700"
             >
@@ -302,8 +320,8 @@ export default function Support() {
               <span className="text-sm">Overdue Items</span>
               <Badge className="bg-orange-700 text-white">{overdueTickets.length}</Badge>
             </Button>
-            
-            <Button 
+
+            <Button
               onClick={showPremiumSupport}
               className="h-20 flex-col space-y-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
             >
@@ -311,14 +329,22 @@ export default function Support() {
               <span className="text-sm">Premium Support</span>
               <Badge className="bg-blue-700 text-white">{premiumTickets.length}</Badge>
             </Button>
-            
-            <Button 
+
+            <Button
               onClick={showPerformanceReport}
               className="h-20 flex-col space-y-2 bg-gradient-to-br from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700"
             >
               <BarChart3 className="h-6 w-6" />
               <span className="text-sm">Performance Report</span>
               <Badge className="bg-green-700 text-white">Live</Badge>
+            </Button>
+
+            <Button
+              onClick={() => setIsRegisterDialogOpen(true)}
+              className="h-20 flex-col space-y-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
+            >
+              <Plus className="h-6 w-6" />
+              <span className="text-sm">Register Ticket</span>
             </Button>
           </div>
         </CardContent>
@@ -679,6 +705,136 @@ export default function Support() {
               <Download className="h-4 w-4 mr-2" />
               Export Report
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Register Ticket Dialog */}
+      <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Register Support Ticket</DialogTitle>
+            <DialogDescription>
+              Create a new support ticket. It will also appear in Activities.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="ticket-title">Title *</Label>
+              <Input id="ticket-title" value={newTicket.title} onChange={(e) => setNewTicket(v => ({...v, title: e.target.value}))} placeholder="Short issue summary" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ticket-client">Client *</Label>
+                <Select value={newTicket.client} onValueChange={(val) => setNewTicket(v => ({...v, client: val}))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ticket-assignee">Assignee *</Label>
+                <Select value={newTicket.assignee} onValueChange={(val) => setNewTicket(v => ({...v, assignee: val}))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select assignee" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TEAM_MEMBERS.map(m => (
+                      <SelectItem key={m.name} value={m.name}>{m.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ticket-priority">Priority</Label>
+                <Select value={newTicket.priority} onValueChange={(val) => setNewTicket(v => ({...v, priority: val}))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="urgent">Urgent</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ticket-category">Category</Label>
+                <Select value={newTicket.category} onValueChange={(val) => setNewTicket(v => ({...v, category: val}))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Bug">Bug</SelectItem>
+                    <SelectItem value="Question">Question</SelectItem>
+                    <SelectItem value="Feature">Feature</SelectItem>
+                    <SelectItem value="Training">Training</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ticket-description">Description</Label>
+              <Textarea id="ticket-description" rows={4} value={newTicket.description} onChange={(e) => setNewTicket(v => ({...v, description: e.target.value}))} placeholder="Describe the issue..." />
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <input id="ticket-premium" type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded" checked={newTicket.premium} onChange={(e) => setNewTicket(v => ({...v, premium: e.target.checked}))} />
+              <Label htmlFor="ticket-premium">Premium</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRegisterDialogOpen(false)}>Cancel</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
+              if (!newTicket.title || !newTicket.client || !newTicket.assignee) {
+                alert("Please fill in title, client and assignee");
+                return;
+              }
+              try {
+                const saved = localStorage.getItem('activitiesList');
+                const list = saved ? JSON.parse(saved) : [];
+                const now = new Date();
+                const mapPriority = (p) => p === 'urgent' ? 'Urgent' : p === 'high' ? 'High' : p === 'low' ? 'Low' : 'Medium';
+                const activity = {
+                  id: (list?.[0]?.id || 0) + list.length + 1,
+                  activityType: 'Email',
+                  category: 'Support',
+                  linkedClient: newTicket.client,
+                  unitType: 'Government',
+                  date: now.toISOString().split('T')[0],
+                  time: now.toTimeString().slice(0,5),
+                  responsible: [newTicket.assignee],
+                  status: 'To Do',
+                  deadline: '',
+                  reminderDate: '',
+                  nextStep: '',
+                  nextStepDate: '',
+                  notes: newTicket.description || newTicket.title,
+                  attachments: [],
+                  costPerActivity: 0,
+                  premiumSupport: !!newTicket.premium,
+                  ticketType: newTicket.category,
+                  isTicket: true,
+                  priority: mapPriority(newTicket.priority),
+                };
+                const updated = [activity, ...list];
+                localStorage.setItem('activitiesList', JSON.stringify(updated));
+                window.dispatchEvent(new Event('activitiesListUpdated'));
+                setIsRegisterDialogOpen(false);
+                setNewTicket({ title: '', client: '', priority: 'medium', category: 'Bug', assignee: '', description: '', premium: false });
+                alert('Ticket registered successfully');
+              } catch (e) {
+                console.error('Failed to register ticket', e);
+                alert('Failed to register ticket');
+              }
+            }}>Register Ticket</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
