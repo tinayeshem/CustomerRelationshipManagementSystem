@@ -30,6 +30,42 @@ export default function Projects() {
     const saved = localStorage.getItem("projectsData");
     return saved ? JSON.parse(saved) : [];
   });
+
+  // One-time migration: convert old 4-stage projects and org phases to new 7-phase pipeline
+  useEffect(() => {
+    const mapOldToNew = { Meeting: "Initial Contact", Call: "Proposal", Negotiation: "Negotiation", Contract: "Contract" };
+
+    // Migrate projects
+    const savedProjects = localStorage.getItem("projectsData");
+    const projList = savedProjects ? JSON.parse(savedProjects) : [];
+    let projChanged = false;
+    const migratedProjects = projList.map(p => {
+      const needs = !Array.isArray(p.stages) || p.stages.length !== PHASES.length || (p.stages[0]?.name === "Meeting" || p.stages[0]?.name === "Call");
+      if (!needs) return p;
+      projChanged = true;
+      const mappedCurrent = mapOldToNew[p.currentStage] || (PHASES.includes(p.currentStage) ? p.currentStage : PHASES[0]);
+      const newStages = PHASES.map((name, idx) => ({ name, completed: PHASES.indexOf(mappedCurrent) >= idx, order: idx + 1 }));
+      return { ...p, stages: newStages, currentStage: mappedCurrent };
+    });
+    if (projChanged) {
+      setProjects(migratedProjects);
+      localStorage.setItem("projectsData", JSON.stringify(migratedProjects));
+    }
+
+    // Migrate organizations
+    const savedOrgs = localStorage.getItem("organizationData");
+    const orgList = savedOrgs ? JSON.parse(savedOrgs) : [];
+    let orgChanged = false;
+    const migratedOrgs = orgList.map(o => {
+      if (o?.phase === "Meeting") { orgChanged = true; return { ...o, phase: "Initial Contact" }; }
+      if (o?.phase === "Call") { orgChanged = true; return { ...o, phase: "Proposal" }; }
+      return o;
+    });
+    if (orgChanged) {
+      localStorage.setItem("organizationData", JSON.stringify(migratedOrgs));
+      setOrganizations(migratedOrgs);
+    }
+  }, []);
   const [organizations, setOrganizations] = useState(() => {
     const saved = localStorage.getItem("organizationData");
     return saved ? JSON.parse(saved) : [];
