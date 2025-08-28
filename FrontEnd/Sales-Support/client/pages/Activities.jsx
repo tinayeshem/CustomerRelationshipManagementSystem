@@ -249,10 +249,12 @@ export default function Activities() {
   const [toDate, setToDate] = useState("");
 
 
-  // Dynamic clients list based on activities
+  // Dynamic clients list based on organizations + activities
   const clients = React.useMemo(() => {
+    const stored = localStorage.getItem('organizationData');
+    const orgNames = stored ? JSON.parse(stored).map(o => o.organizationName) : [];
     const activityClients = [...new Set(activitiesList.map(activity => activity.linkedClient))];
-    const allClients = [...new Set([...defaultClients, ...activityClients])];
+    const allClients = [...new Set([...defaultClients, ...orgNames, ...activityClients])];
     return allClients.filter(client => client !== "All Clients").sort().concat(["All Clients"]).reverse();
   }, [activitiesList]);
 
