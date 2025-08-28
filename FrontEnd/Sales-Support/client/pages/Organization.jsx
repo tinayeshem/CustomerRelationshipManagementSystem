@@ -961,6 +961,27 @@ export default function Organization() {
                       )}
                     </div>
 
+                    {/* Responsible Team Members */}
+                    {org.responsibleMembers && org.responsibleMembers.length > 0 && (
+                      <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <Users className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-800">Responsible Team</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {org.responsibleMembers.map((member, index) => (
+                            <Badge
+                              key={index}
+                              variant="outline"
+                              className="bg-white text-blue-700 border-blue-200 hover:bg-blue-50 transition-colors"
+                            >
+                              {member}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     {org.nextPhase && (
                       <div className="mt-2 p-2 bg-blue-50 rounded text-xs">
                         <strong>Next Phase:</strong> {org.nextPhase}
