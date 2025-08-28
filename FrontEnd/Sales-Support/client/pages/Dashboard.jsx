@@ -61,75 +61,7 @@ const quickStats = [
   },
 ];
 
-// Team activities data that will be filtered based on user's department
-const allTeamActivities = [
-  {
-    id: 1,
-    type: "Call",
-    client: "Zagreb Municipality",
-    time: "2 hours ago",
-    status: "completed",
-    icon: Phone,
-    responsiblePerson: "Ana Marić",
-    department: "Sales",
-    teamMembers: ["Ana Marić", "Marko Petrović"],
-  },
-  {
-    id: 2,
-    type: "Email",
-    client: "Sports Club Dinamo",
-    time: "4 hours ago",
-    status: "pending",
-    icon: Mail,
-    responsiblePerson: "Marko Petrović",
-    department: "Sales",
-    teamMembers: ["Marko Petrović"],
-  },
-  {
-    id: 3,
-    type: "Meeting",
-    client: "Split City Council",
-    time: "Tomorrow 9:00",
-    status: "scheduled",
-    icon: Calendar,
-    responsiblePerson: "Ana Marić",
-    department: "Sales",
-    teamMembers: ["Ana Marić", "Luka Novak"],
-  },
-  {
-    id: 4,
-    type: "Support Ticket",
-    client: "Tech Solutions Ltd",
-    time: "1 hour ago",
-    status: "in progress",
-    icon: Settings,
-    responsiblePerson: "Petra Babić",
-    department: "Support",
-    teamMembers: ["Petra Babić"],
-  },
-  {
-    id: 5,
-    type: "Email",
-    client: "Crafters Association Zagreb",
-    time: "3 hours ago",
-    status: "completed",
-    icon: Mail,
-    responsiblePerson: "Petra Babić",
-    department: "Support",
-    teamMembers: ["Petra Babić"],
-  },
-  {
-    id: 6,
-    type: "Call",
-    client: "Pula Municipality",
-    time: "5 hours ago",
-    status: "completed",
-    icon: Phone,
-    responsiblePerson: "Luka Novak",
-    department: "Sales",
-    teamMembers: ["Luka Novak", "Ana Marić"],
-  },
-];
+// Team activities are now loaded dynamically via useTeamActivityFeed hook
 
 // All tasks that will be filtered based on assigned user
 const allUpcomingTasks = [
