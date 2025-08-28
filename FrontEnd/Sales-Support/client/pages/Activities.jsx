@@ -1332,7 +1332,7 @@ export default function Activities() {
             <div className="space-y-3">
               <Label>Responsible Team Members *</Label>
               <div className="grid grid-cols-2 gap-3">
-                {["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"].map((member) => (
+                {availableMembersForEdit.map((member) => (
                   <div key={member} className="flex items-center space-x-2">
                     <input
                       type="checkbox"
