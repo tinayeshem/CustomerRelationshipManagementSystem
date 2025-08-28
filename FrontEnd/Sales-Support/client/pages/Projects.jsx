@@ -525,21 +525,28 @@ export default function Projects() {
               <CardDescription>{p.goal}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className={getStageBadge(p.currentStage)}>{p.currentStage}</Badge>
-                <Button size="sm" variant="outline" className="border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => goBackStage(p)}>
-                  Go Back Stage
-                </Button>
-                <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => advanceStage(p)}>
-                  Advance Stage
-                </Button>
-                <Button size="sm" variant="outline" className="border-green-200 text-green-700 hover:bg-green-50" onClick={() => setAddActivityFor(p)}>
-                  Add Activity
-                </Button>
-                <Button size="sm" variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => loadAuditTrail(p.id)}>
-                  <History className="h-3 w-3 mr-1" />
-                  History
-                </Button>
+              <div className="space-y-3">
+                {/* Current Stage and Stage Controls */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className={getStageBadge(p.currentStage)}>{p.currentStage}</Badge>
+                  <Button size="sm" variant="outline" className="border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => goBackStage(p)}>
+                    Go Back Stage
+                  </Button>
+                  <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => advanceStage(p)}>
+                    Advance Stage
+                  </Button>
+                </div>
+
+                {/* Project Actions */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button size="sm" variant="outline" className="border-green-200 text-green-700 hover:bg-green-50" onClick={() => setAddActivityFor(p)}>
+                    Add Activity
+                  </Button>
+                  <Button size="sm" variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => loadAuditTrail(p.id)}>
+                    <History className="h-3 w-3 mr-1" />
+                    History
+                  </Button>
+                </div>
               </div>
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Stages</p>
