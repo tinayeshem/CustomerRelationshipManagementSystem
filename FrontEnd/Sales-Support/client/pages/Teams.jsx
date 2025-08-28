@@ -41,11 +41,16 @@ const generateMemberMetrics = (member, index) => {
 export default function Teams() {
   const { user, isManager, getAllUsers } = useAuth();
 
-  // Get all registered team members from AuthContext
+  // Get department-scoped team members
   const teamMembers = useMemo(() => {
     const allUsers = getAllUsers();
-    return allUsers.map((member, index) => generateMemberMetrics(member, index));
-  }, [getAllUsers]);
+    const scoped = user?.department === 'Support'
+      ? allUsers.filter(m => m.department === 'Support')
+      : user?.department === 'Sales'
+        ? allUsers.filter(m => m.department === 'Sales')
+        : allUsers;
+    return scoped.map((member, index) => generateMemberMetrics(member, index));
+  }, [getAllUsers, user?.department]);
 
   // Load created teams from localStorage
   const [createdTeams, setCreatedTeams] = useState(() => {
