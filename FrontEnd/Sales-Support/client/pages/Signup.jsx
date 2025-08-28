@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { TEAM_MEMBERS } from "@/constants/teamMembers";
 import { Button } from "@/components/ui/button";
 import {
   Card,
