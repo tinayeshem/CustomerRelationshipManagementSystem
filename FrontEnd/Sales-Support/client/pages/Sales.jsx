@@ -281,7 +281,7 @@ export default function Sales() {
     []
   );
 
-  const [leadsList, setLeadsList] = useState(normalizedSeed);
+  const [leadsList, setLeadsList] = useState([]);
   const [isNewOpen, setIsNewOpen] = useState(false);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
