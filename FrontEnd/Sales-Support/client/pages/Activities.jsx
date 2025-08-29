@@ -473,6 +473,20 @@ export default function Activities() {
     setIsViewDialogOpen(true);
   };
 
+  React.useEffect(() => {
+    try {
+      const pendingId = localStorage.getItem('openActivityId');
+      if (pendingId) {
+        const act = (activitiesList || []).find(a => String(a.id) === String(pendingId));
+        if (act) {
+          setSelectedActivity(act);
+          setIsViewDialogOpen(true);
+        }
+        localStorage.removeItem('openActivityId');
+      }
+    } catch {}
+  }, [activitiesList]);
+
   const handleOpenMaps = (clientName) => {
     const address = clientAddresses[clientName];
     if (address) {
