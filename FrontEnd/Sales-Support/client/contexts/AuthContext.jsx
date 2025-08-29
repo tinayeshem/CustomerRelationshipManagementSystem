@@ -269,8 +269,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const hasPermission = (permission) => {
-    if (!user || !user.permissions) return false;
-    return user.permissions.includes(permission);
+    if (!user) return false;
+    if (user.department === 'Support' && permission === 'reports') return true;
+    return Array.isArray(user.permissions) && user.permissions.includes(permission);
   };
 
   const isManager = () => {
