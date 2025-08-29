@@ -293,7 +293,20 @@ export default function Sales() {
     []
   );
 
-  const [leadsList, setLeadsList] = useState([]);
+  const [leadsList, setLeadsList] = useState(() => {
+    try {
+      const saved = localStorage.getItem("sales_leads");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("sales_leads", JSON.stringify(leadsList));
+    } catch {}
+  }, [leadsList]);
   const [isNewOpen, setIsNewOpen] = useState(false);
 
   // Load organizations from Organization dashboard
@@ -324,10 +337,10 @@ export default function Sales() {
     };
   }, []);
 
-  // Initialize/Sync leads from organizations
+  // Initialize/Sync leads from organizations (preserve user changes like stage)
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
-    const mapped = (organizations || []).map((o, idx) => ({
+    const baseFromOrgs = (organizations || []).map((o, idx) => ({
       id: `LEAD-ORG-${o?.id ?? idx}`,
       name: o?.organizationName || o?.name || "Organization",
       contacts: [],
@@ -349,16 +362,33 @@ export default function Sales() {
       lastActivity: today
     }));
 
-    const initFlag = localStorage.getItem("sales_init_from_orgs") === "1";
-    if (!initFlag) {
-      setLeadsList(mapped);
-      localStorage.setItem("sales_init_from_orgs", "1");
-      return;
-    }
-    // After initial replacement, keep org-derived leads in sync but retain user-added leads
     setLeadsList((prev) => {
+      const prevMap = new Map(Array.isArray(prev) ? prev.map(l => [l.id, l]) : []);
+      const mergedOrgLeads = baseFromOrgs.map((l) => {
+        const old = prevMap.get(l.id);
+        if (!old) return l;
+        return {
+          ...l,
+          stage: old.stage ?? l.stage,
+          probability: old.probability ?? l.probability,
+          value: old.value ?? l.value,
+          contacts: Array.isArray(old.contacts) ? old.contacts : l.contacts,
+          contact: old.contact ?? l.contact,
+          team: Array.isArray(old.team) ? old.team : l.team,
+          assignee: old.assignee ?? l.assignee,
+          nextAction: old.nextAction ?? l.nextAction,
+          status: old.status ?? l.status,
+          notes: old.notes ?? l.notes,
+          created: old.created ?? l.created,
+          lastActivity: old.lastActivity ?? l.lastActivity,
+          product: old.product ?? l.product,
+          region: old.region ?? l.region,
+          source: old.source ?? l.source,
+        };
+      });
+
       const nonOrg = Array.isArray(prev) ? prev.filter(l => typeof l?.id !== "string" || !l.id.startsWith("LEAD-ORG-")) : [];
-      return [...mapped, ...nonOrg];
+      return [...mergedOrgLeads, ...nonOrg];
     });
   }, [organizations]);
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -980,7 +1010,7 @@ export default function Sales() {
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedLead?.name} — <span className="text-sm font-normal">Complete Profile</span>
+              {selectedLead?.name} �� <span className="text-sm font-normal">Complete Profile</span>
             </DialogTitle>
             <DialogDescription>Comprehensive client information and deal details.</DialogDescription>
           </DialogHeader>
