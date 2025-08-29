@@ -405,7 +405,7 @@ export default function Activities() {
       : (selectedType === "All Types" || activity.activityType === selectedType);
     const matchesCategory = isSupport
       ? true
-      : (selectedCategory === "All Categories" || activity.category === selectedCategory);
+      : true;
     const matchesPremium = isSupport
       ? (selectedPremiumClient === "All" || activity.premiumSupport === (selectedPremiumClient === "Premium"))
       : true;
