@@ -322,7 +322,7 @@ export default function Dashboard() {
             ) : (
               <div className="text-center py-8">
                 <Activity className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-sm mb-2">No team activities yet</p>
+                <p className="text-gray-500 text-sm mb-2">No team tickets yet</p>
                 <p className="text-xs text-gray-400">
                   {!hasProjects
                     ? "You're not assigned to any projects yet"
