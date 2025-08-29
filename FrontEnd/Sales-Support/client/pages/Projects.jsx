@@ -127,7 +127,6 @@ export default function Projects() {
     organizationId: "",
     goal: "",
     notes: "",
-    stages: PHASES.map((s) => ({ name: s, completed: false })),
     assignedMembers: [],
     selectedActivityIds: []
   });
@@ -161,7 +160,6 @@ export default function Projects() {
     organizationId: "",
     goal: "",
     notes: "",
-    stages: PHASES.map((s) => ({ name: s, completed: false })),
     assignedMembers: [],
     selectedActivityIds: []
   });
@@ -181,8 +179,6 @@ export default function Projects() {
       organizationName: org?.organizationName,
       goal: createForm.goal,
       notes: createForm.notes,
-      stages: PHASES.map((s, idx) => ({ name: s, completed: false, order: idx + 1 })),
-      currentStage: currentFromOrg,
       assignedMembers: createForm.assignedMembers,
       activityIds: [...createForm.selectedActivityIds],
       createdAt: new Date().toISOString()
@@ -356,7 +352,7 @@ export default function Projects() {
       return;
     }
 
-    const id = (activities?.[0]?.id || 0) + activities.length + 1;
+    const id = Date.now();
     const newActivity = {
       id,
       activityType: activityForm.activityType,
@@ -377,19 +373,24 @@ export default function Projects() {
       ticketType: "Question",
       premiumSupport: false,
       priority: activityForm.priority,
-      projectId: addActivityFor.id,
       activityLog: [
         { user: activityForm.responsible, action: "Created", timestamp: new Date().toLocaleString() }
       ]
     };
 
-    const updatedActivities = [newActivity, ...activities];
-    saveActivities(updatedActivities);
+    const updatedProjects = projects.map(p => p.id === addActivityFor.id
+      ? { ...p, cardActivities: [ ...(p.cardActivities || []), newActivity ] }
+      : p
+    );
+    saveProjects(updatedProjects);
     setAddActivityFor(null);
     setActivityForm({ activityType: "Call", date: new Date().toISOString().split('T')[0], time: new Date().toTimeString().slice(0,5), responsible: [], notes: "", status: "To Do", priority: "Medium" });
   };
 
-  const projectsForUI = useMemo(() => projects, [projects]);
+  const projectsForUI = useMemo(() => {
+    if (!user?.name) return projects;
+    return projects.filter(p => Array.isArray(p.assignedMembers) && p.assignedMembers.includes(user.name));
+  }, [projects, user?.name]);
 
   // Load audit trail for a specific project
   const loadAuditTrail = async (projectId) => {
@@ -455,19 +456,6 @@ export default function Projects() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-blue-800 flex items-center gap-2"><Layers className="h-4 w-4" /> Stages</h3>
-                  <div className="space-y-2">
-                    {PHASES.map((name, idx) => (
-                      <div key={name} className="flex items-center justify-between p-2 rounded bg-blue-50">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={getStageBadge(name)}>{idx + 1}</Badge>
-                          <span className="text-sm">{name}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
                 <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-blue-800 flex items-center gap-2"><Users className="h-4 w-4" /> Assign Members</h3>
                   <div className="grid grid-cols-2 gap-3">
@@ -545,17 +533,6 @@ export default function Projects() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
-                {/* Current Stage and Stage Controls */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="outline" className={getStageBadge(p.currentStage)}>{p.currentStage}</Badge>
-                  <Button size="sm" variant="outline" className="border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => goBackStage(p)}>
-                    Go Back Stage
-                  </Button>
-                  <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => advanceStage(p)}>
-                    Advance Stage
-                  </Button>
-                </div>
-
                 {/* Project Actions */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <Button size="sm" variant="outline" className="border-green-200 text-green-700 hover:bg-green-50" onClick={() => setAddActivityFor(p)}>
@@ -574,20 +551,6 @@ export default function Projects() {
                   }}>
                     Edit
                   </Button>
-                  <Button size="sm" variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => loadAuditTrail(p.id)}>
-                    <History className="h-3 w-3 mr-1" />
-                    History
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Stages</p>
-                <div className="flex flex-wrap gap-2">
-                  {p.stages.map((s, idx) => (
-                    <button key={s.name} className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold ${s.completed ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"}`} onClick={() => setProjectStage(p, s.name)}>
-                      {idx + 1}. {s.name}
-                    </button>
-                  ))}
                 </div>
               </div>
               {!!p.assignedMembers?.length && (
@@ -601,18 +564,19 @@ export default function Projects() {
                 </div>
               )}
               <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Linked Activities</p>
-                <div className="space-y-1">
-                  {activities.filter(a => a.projectId === p.id || a.linkedClient === p.organizationName).map((a) => (
-                    <div key={a.id} className="text-sm flex items-center justify-between p-2 rounded bg-background/50">
-                      <div>
-                        <span className="font-medium">{a.activityType}</span> • {a.date} {a.time}
+                <p className="text-xs text-muted-foreground">Activities</p>
+                <div className="space-y-2">
+                  {Array.isArray(p.cardActivities) && p.cardActivities.length > 0 ? (
+                    p.cardActivities.map((a) => (
+                      <div key={a.id} className="text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 p-3 rounded bg-background/50">
+                        <div className="leading-tight">
+                          <span className="font-medium">{a.activityType}</span> • {a.date} {a.time}
+                        </div>
+                        <div className="text-xs text-muted-foreground sm:mt-0">{Array.isArray(a.responsible) ? a.responsible.join(", ") : a.responsible}</div>
                       </div>
-                      <div className="text-xs text-muted-foreground">{Array.isArray(a.responsible) ? a.responsible.join(", ") : a.responsible}</div>
-                    </div>
-                  ))}
-                  {activities.filter(a => a.projectId === p.id || a.linkedClient === p.organizationName).length === 0 && (
-                    <p className="text-xs text-gray-600">No activities linked yet.</p>
+                    ))
+                  ) : (
+                    <p className="text-xs text-gray-600">No activities added yet.</p>
                   )}
                 </div>
               </div>
@@ -648,17 +612,6 @@ export default function Projects() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Current Stage</Label>
-                  <Select value={editForm.currentStage} onValueChange={(v) => setEditForm({ ...editForm, currentStage: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select stage" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PHASES.map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
                   <Label>Assigned Members</Label>
                   <div className="grid grid-cols-2 gap-2">
                     {editAvailableMembers.map((m) => (
@@ -686,12 +639,9 @@ export default function Projects() {
             <Button className="bg-dark-blue hover:bg-dark-blue-hover text-white" onClick={() => {
               if (!editingProject || !editForm.name) { alert('Project name is required'); return; }
               try {
-                const stageOrder = PHASES;
-                const toIdx = stageOrder.indexOf(editForm.currentStage);
                 const updated = projects.map(p => {
                   if (p.id !== editingProject.id) return p;
-                  const newStages = p.stages.map((s, i) => ({ ...s, completed: i <= toIdx }));
-                  return { ...p, name: editForm.name, goal: editForm.goal, notes: editForm.notes, assignedMembers: editForm.assignedMembers, currentStage: editForm.currentStage, stages: newStages };
+                  return { ...p, name: editForm.name, goal: editForm.goal, notes: editForm.notes, assignedMembers: editForm.assignedMembers };
                 });
                 saveProjects(updated);
                 setIsEditOpen(false);

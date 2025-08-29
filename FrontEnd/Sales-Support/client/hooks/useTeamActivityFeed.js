@@ -69,10 +69,27 @@ const getResponsiblePerson = (activity) => {
   if (typeof responsible === 'string') {
     return responsible;
   }
-  
+
   // Fallback: check activityLog
   const createdEntry = (activity.activityLog || []).find(log => log.action === 'Created');
-  return createdEntry ? createdEntry.user : 'Unknown';
+  if (!createdEntry) return 'Unknown';
+  if (Array.isArray(createdEntry.user)) return createdEntry.user[0] || 'Unknown';
+  return createdEntry.user || 'Unknown';
+};
+
+// Get all actor names involved in an activity (for filtering)
+const getActorNames = (activity) => {
+  const responsible = activity.responsible;
+  if (Array.isArray(responsible)) {
+    return responsible.filter(Boolean);
+  }
+  if (typeof responsible === 'string') {
+    return [responsible];
+  }
+  const createdEntry = (activity.activityLog || []).find(log => log.action === 'Created');
+  if (!createdEntry || !createdEntry.user) return [];
+  if (Array.isArray(createdEntry.user)) return createdEntry.user.filter(Boolean);
+  return [createdEntry.user];
 };
 
 export const useTeamActivityFeed = (limit = 3) => {
@@ -122,7 +139,7 @@ export const useTeamActivityFeed = (limit = 3) => {
 
   // Filter and process team activities
   const teamActivityFeed = useMemo(() => {
-    if (!user?.name || !activities.length || !projects.length) {
+    if (!user?.name || !projects.length) {
       return [];
     }
 
@@ -142,19 +159,39 @@ export const useTeamActivityFeed = (limit = 3) => {
     const projectIds = new Set(userProjects.map(p => p.id));
     const projectOrgNames = new Set(userProjects.map(p => p.organizationName));
 
+    // Merge global activities with project card activities
+    const projectCardActivities = projects.flatMap(p =>
+      (Array.isArray(p.cardActivities) ? p.cardActivities : []).map(a => ({
+        ...a,
+        projectId: a.projectId ?? p.id,
+        linkedClient: a.linkedClient || p.organizationName
+      }))
+    );
+    // Deduplicate by id (prefer global entries)
+    const allById = new Map();
+    for (const a of projectCardActivities) allById.set(a.id, a);
+    for (const a of activities) allById.set(a.id, { ...allById.get(a.id), ...a });
+    const allActivities = Array.from(allById.values());
+
     // Step 3: Filter activities for user's projects
-    const activitiesForUserProjects = activities.filter(activity => {
-      // Check if activity is linked to user's projects
+    const activitiesForUserProjects = allActivities.filter(activity => {
       const isLinkedByProjectId = activity.projectId && projectIds.has(activity.projectId);
       const isLinkedByOrgName = activity.linkedClient && projectOrgNames.has(activity.linkedClient);
-      
       return isLinkedByProjectId || isLinkedByOrgName;
     });
 
-    // Step 4: Exclude activities created by current user
-    const teamMemberActivities = activitiesForUserProjects.filter(activity => 
-      !isActivityByCurrentUser(activity, currentUserName)
+    // Step 4: Exclude activities by current user and include only those by teammates assigned on these projects
+    const allowedTeamMembers = new Set(
+      userProjects
+        .flatMap(p => Array.isArray(p.assignedMembers) ? p.assignedMembers : [])
+        .filter(n => n && n !== currentUserName)
     );
+
+    const teamMemberActivities = activitiesForUserProjects.filter(activity => {
+      if (isActivityByCurrentUser(activity, currentUserName)) return false;
+      const names = getActorNames(activity);
+      return names.some(n => allowedTeamMembers.has(n));
+    });
 
     // Step 5: Transform to feed format and sort by date/time
     const feedItems = teamMemberActivities.map(activity => ({

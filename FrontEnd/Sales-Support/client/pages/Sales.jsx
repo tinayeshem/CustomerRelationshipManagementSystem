@@ -127,6 +127,16 @@ const regionData = [
 
 const teamDirectory = TEAM_MEMBER_NAMES;
 
+// Unified pipeline stages for Sales
+const STAGES = [
+  "First Contacted",
+  "Interested",
+  "Offer Sent",
+  "Accepted",
+  "Contract Signed",
+  "Implementation",
+];
+
 // ---------------- Helpers ----------------
 const getStatusColor = (status) => {
   switch (status) {
@@ -136,12 +146,20 @@ const getStatusColor = (status) => {
     default: return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
+const getStatusFromStage = (stage) => {
+  if (stage === "Contract Signed" || stage === "Implementation") return "Hot";
+  if (stage === "First Contacted") return "Cold";
+  if (stage === "Interested" || stage === "Offer Sent" || stage === "Accepted") return "Warm";
+  return "Cold";
+};
 const getStageColor = (stage) => {
   switch (stage) {
-    case "Discovery": return "bg-blue-100 text-blue-800 border-blue-200";
-    case "Proposal": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "Negotiation": return "bg-orange-100 text-orange-800 border-orange-200";
-    case "Closing": return "bg-green-100 text-green-800 border-green-200";
+    case "First Contacted": return "bg-blue-100 text-blue-800 border-blue-200";
+    case "Interested": return "bg-blue-100 text-blue-800 border-blue-200";
+    case "Offer Sent": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "Accepted": return "bg-green-100 text-green-800 border-green-200";
+    case "Contract Signed": return "bg-purple-100 text-purple-800 border-purple-200";
+    case "Implementation": return "bg-indigo-100 text-indigo-800 border-indigo-200";
     default: return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
@@ -281,7 +299,20 @@ export default function Sales() {
     []
   );
 
-  const [leadsList, setLeadsList] = useState([]);
+  const [leadsList, setLeadsList] = useState(() => {
+    try {
+      const saved = localStorage.getItem("sales_leads");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("sales_leads", JSON.stringify(leadsList));
+    } catch {}
+  }, [leadsList]);
   const [isNewOpen, setIsNewOpen] = useState(false);
 
   // Load organizations from Organization dashboard
@@ -312,10 +343,10 @@ export default function Sales() {
     };
   }, []);
 
-  // Initialize/Sync leads from organizations
+  // Initialize/Sync leads from organizations (preserve user changes like stage)
   useEffect(() => {
     const today = new Date().toISOString().split("T")[0];
-    const mapped = (organizations || []).map((o, idx) => ({
+    const baseFromOrgs = (organizations || []).map((o, idx) => ({
       id: `LEAD-ORG-${o?.id ?? idx}`,
       name: o?.organizationName || o?.name || "Organization",
       contacts: [],
@@ -324,7 +355,7 @@ export default function Sales() {
       email: o?.email || "",
       value: 0,
       probability: 10,
-      stage: "Discovery",
+      stage: STAGES[0],
       source: "Organization",
       region: o?.region || "",
       product: "",
@@ -337,16 +368,33 @@ export default function Sales() {
       lastActivity: today
     }));
 
-    const initFlag = localStorage.getItem("sales_init_from_orgs") === "1";
-    if (!initFlag) {
-      setLeadsList(mapped);
-      localStorage.setItem("sales_init_from_orgs", "1");
-      return;
-    }
-    // After initial replacement, keep org-derived leads in sync but retain user-added leads
     setLeadsList((prev) => {
+      const prevMap = new Map(Array.isArray(prev) ? prev.map(l => [l.id, l]) : []);
+      const mergedOrgLeads = baseFromOrgs.map((l) => {
+        const old = prevMap.get(l.id);
+        if (!old) return l;
+        return {
+          ...l,
+          stage: old.stage ?? l.stage,
+          probability: old.probability ?? l.probability,
+          value: old.value ?? l.value,
+          contacts: Array.isArray(old.contacts) ? old.contacts : l.contacts,
+          contact: old.contact ?? l.contact,
+          team: Array.isArray(old.team) ? old.team : l.team,
+          assignee: old.assignee ?? l.assignee,
+          nextAction: old.nextAction ?? l.nextAction,
+          status: old.status ?? l.status,
+          notes: old.notes ?? l.notes,
+          created: old.created ?? l.created,
+          lastActivity: old.lastActivity ?? l.lastActivity,
+          product: old.product ?? l.product,
+          region: old.region ?? l.region,
+          source: old.source ?? l.source,
+        };
+      });
+
       const nonOrg = Array.isArray(prev) ? prev.filter(l => typeof l?.id !== "string" || !l.id.startsWith("LEAD-ORG-")) : [];
-      return [...mapped, ...nonOrg];
+      return [...mergedOrgLeads, ...nonOrg];
     });
   }, [organizations]);
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -359,8 +407,7 @@ export default function Sales() {
     name: "",
     contacts: [{ name: "", role: "Primary", phone: "", email: "" }],
     value: "",
-    probability: 50,
-    stage: "Discovery",
+    stage: STAGES[0],
     source: "",
     region: "",
     product: "",
@@ -378,7 +425,7 @@ export default function Sales() {
     }
     const id = `LEAD-${String(leadsList.length + 1).padStart(3, "0")}`;
     const today = new Date().toISOString().split("T")[0];
-    const status = newLead.probability >= 70 ? "Hot" : newLead.probability >= 40 ? "Warm" : "Cold";
+    const status = getStatusFromStage(newLead.stage);
 
     const lead = {
       id,
@@ -388,7 +435,6 @@ export default function Sales() {
       phone: newLead.contacts[0]?.phone || "",
       email: newLead.contacts[0]?.email || "",
       value: parseFloat(newLead.value) || 0,
-      probability: newLead.probability,
       stage: newLead.stage,
       source: newLead.source,
       region: newLead.region,
@@ -408,8 +454,7 @@ export default function Sales() {
       name: "",
       contacts: [{ name: "", role: "Primary", phone: "", email: "" }],
       value: "",
-      probability: 50,
-      stage: "Discovery",
+      stage: STAGES[0],
       source: "",
       region: "",
       product: "",
@@ -421,14 +466,21 @@ export default function Sales() {
     setIsNewOpen(false);
   };
 
+  const updateLeadStage = (leadId, toStage) => {
+    const newStatus = getStatusFromStage(toStage);
+    setLeadsList((prev) => prev.map((l) => (l.id === leadId ? { ...l, stage: toStage, status: newStatus } : l)));
+    setEditLead((prev) => (prev && prev.id === leadId ? { ...prev, stage: toStage, status: newStatus } : prev));
+    setSelectedLead((prev) => (prev && prev.id === leadId ? { ...prev, stage: toStage, status: newStatus } : prev));
+  };
+
   // ------- Filters -------
   const [filters, setFilters] = useState({
     search: "",
-    stage: "All",
-    status: "All",
-    region: "All",
-    product: "All",
-    assignee: "All",
+    stage: "All Stages",
+    status: "All Statuses",
+    region: "All Regions",
+    product: "All Products",
+    assignee: "All Owners",
     minVal: "",
     maxVal: "",
     dateFrom: "",
@@ -437,11 +489,11 @@ export default function Sales() {
   const resetFilters = () =>
     setFilters({
       search: "",
-      stage: "All",
-      status: "All",
-      region: "All",
-      product: "All",
-      assignee: "All",
+      stage: "All Stages",
+      status: "All Statuses",
+      region: "All Regions",
+      product: "All Products",
+      assignee: "All Owners",
       minVal: "",
       maxVal: "",
       dateFrom: "",
@@ -452,11 +504,11 @@ export default function Sales() {
     return leadsList.filter((l) => {
       const text = `${l.name} ${l.region} ${l.product} ${l.assignee} ${l.contacts?.map((c) => c.name).join(" ")}`.toLowerCase();
       if (filters.search && !text.includes(filters.search.toLowerCase())) return false;
-      if (filters.stage !== "All" && l.stage !== filters.stage) return false;
-      if (filters.status !== "All" && l.status !== filters.status) return false;
-      if (filters.region !== "All" && l.region !== filters.region) return false;
-      if (filters.product !== "All" && l.product !== filters.product) return false;
-      if (filters.assignee !== "All" && l.assignee !== filters.assignee) return false;
+      if (filters.stage !== "All Stages" && l.stage !== filters.stage) return false;
+      if (filters.status !== "All Statuses" && getStatusFromStage(l.stage) !== filters.status) return false;
+      if (filters.region !== "All Regions" && l.region !== filters.region) return false;
+      if (filters.product !== "All Products" && l.product !== filters.product) return false;
+      if (filters.assignee !== "All Owners" && l.assignee !== filters.assignee) return false;
       if (filters.minVal && Number(l.value) < Number(filters.minVal)) return false;
       if (filters.maxVal && Number(l.value) > Number(filters.maxVal)) return false;
       // Date range checks (Next Action)
@@ -499,10 +551,7 @@ export default function Sales() {
                     <Select value={newLead.stage} onValueChange={(v) => handleNewChange("stage", v)}>
                       <SelectTrigger><SelectValue placeholder="Select stage" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Discovery">Discovery</SelectItem>
-                        <SelectItem value="Proposal">Proposal</SelectItem>
-                        <SelectItem value="Negotiation">Negotiation</SelectItem>
-                        <SelectItem value="Closing">Closing</SelectItem>
+                        {STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -514,16 +563,11 @@ export default function Sales() {
                   onChange={(c) => handleNewChange("contacts", c)}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Deal Value (€) *</Label>
                     <Input type="number" placeholder="50000"
                       value={newLead.value} onChange={(e) => handleNewChange("value", e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Probability (%)</Label>
-                    <Input type="number" min="0" max="100"
-                      value={newLead.probability} onChange={(e) => handleNewChange("probability", parseInt(e.target.value || "0", 10))} />
                   </div>
                   <div className="space-y-2">
                     <Label>Next Action Date</Label>
@@ -612,9 +656,6 @@ export default function Sales() {
                 <p className="text-3xl font-bold text-blue-900">{formatCurrency(salesMetrics.totalPipeline)}</p>
                 <p className="text-xs text-blue-600 mt-1">+12% from last month</p>
               </div>
-              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-white" />
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -632,9 +673,6 @@ export default function Sales() {
                   </p>
                 </div>
               </div>
-              <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
-                <Target className="h-6 w-6 text-white" />
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -647,9 +685,6 @@ export default function Sales() {
                 <p className="text-3xl font-bold text-orange-900">{salesMetrics.conversionRate}%</p>
                 <p className="text-xs text-orange-600 mt-1">+5% from last month</p>
               </div>
-              <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-white" />
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -661,9 +696,6 @@ export default function Sales() {
                 <p className="text-sm font-medium text-purple-700">Avg Deal Size</p>
                 <p className="text-3xl font-bold text-purple-900">{formatCurrency(salesMetrics.avgDealSize)}</p>
                 <p className="text-xs text-purple-600 mt-1">+8% from last month</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
-                <Award className="h-6 w-6 text-white" />
               </div>
             </div>
           </CardContent>
@@ -714,17 +746,14 @@ export default function Sales() {
             <Select value={filters.stage} onValueChange={(v) => setFilters((f) => ({ ...f, stage: v }))}>
               <SelectTrigger><SelectValue placeholder="Filter by Stage" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="All">All stages</SelectItem>
-                <SelectItem value="Discovery">Discovery</SelectItem>
-                <SelectItem value="Proposal">Proposal</SelectItem>
-                <SelectItem value="Negotiation">Negotiation</SelectItem>
-                <SelectItem value="Closing">Closing</SelectItem>
+                <SelectItem value="All Stages">All stages</SelectItem>
+                {STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filters.status} onValueChange={(v) => setFilters((f) => ({ ...f, status: v }))}>
               <SelectTrigger><SelectValue placeholder="Filter by Status" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="All">All statuses</SelectItem>
+                <SelectItem value="All Statuses">All statuses</SelectItem>
                 <SelectItem value="Hot">Hot</SelectItem>
                 <SelectItem value="Warm">Warm</SelectItem>
                 <SelectItem value="Cold">Cold</SelectItem>
@@ -733,7 +762,7 @@ export default function Sales() {
             <Select value={filters.region} onValueChange={(v) => setFilters((f) => ({ ...f, region: v }))}>
               <SelectTrigger><SelectValue placeholder="Filter by Region" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="All">All regions</SelectItem>
+                <SelectItem value="All Regions">All regions</SelectItem>
                 <SelectItem value="Zagreb">Zagreb</SelectItem>
                 <SelectItem value="Split-Dalmatia">Split-Dalmatia</SelectItem>
                 <SelectItem value="Istria">Istria</SelectItem>
@@ -745,7 +774,7 @@ export default function Sales() {
             <Select value={filters.product} onValueChange={(v) => setFilters((f) => ({ ...f, product: v }))}>
               <SelectTrigger><SelectValue placeholder="Filter by Product" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="All">All products</SelectItem>
+                <SelectItem value="All Products">All products</SelectItem>
                 <SelectItem value="LRSU Management">LRSU Management</SelectItem>
                 <SelectItem value="Tourism Management">Tourism Management</SelectItem>
                 <SelectItem value="Port Management">Port Management</SelectItem>
@@ -755,7 +784,7 @@ export default function Sales() {
             <Select value={filters.assignee} onValueChange={(v) => setFilters((f) => ({ ...f, assignee: v }))}>
               <SelectTrigger><SelectValue placeholder="Filter by Owner" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="All">All owners</SelectItem>
+                <SelectItem value="All Owners">All owners</SelectItem>
                 {teamDirectory.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -783,7 +812,7 @@ export default function Sales() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <h4 className="font-semibold text-gray-800">{lead.name}</h4>
-                      <Badge className={getStatusColor(lead.status)}>{lead.status}</Badge>
+                      <Badge className={getStatusColor(getStatusFromStage(lead.stage))}>{getStatusFromStage(lead.stage)}</Badge>
                       <Badge className={getStageColor(lead.stage)}>{lead.stage}</Badge>
                     </div>
 
@@ -807,16 +836,31 @@ export default function Sales() {
                     </div>
 
                     <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
-                      <span>Probability: {lead.probability}%</span>
                       <span>Product: {lead.product}</span>
                       <span>Owner: {lead.assignee || "—"}</span>
                       <span>Team: {lead.team?.length ? `${lead.team.length} member(s)` : "—"}</span>
                       <span>Next Action: {lead.nextAction || "—"}</span>
                     </div>
 
-                    <div className="mt-2">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${lead.probability}%` }} />
+
+                    <div className="mt-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {STAGES.map((s, idx) => {
+                          const currentIdx = STAGES.indexOf(lead.stage);
+                          const isCompleted = idx < currentIdx;
+                          const isCurrent = idx === currentIdx;
+                          return (
+                            <div key={s} className="flex items-center">
+                              <button type="button" onClick={() => updateLeadStage(lead.id, s)} className={`flex items-center gap-1 ${isCompleted ? "text-green-700" : isCurrent ? "text-blue-700" : "text-gray-400"}`}>
+                                <span className={`w-2 h-2 rounded-full ${isCompleted ? "bg-green-600" : isCurrent ? "bg-blue-600" : "bg-gray-300"}`} />
+                                <span className="text-xs font-medium">{s}</span>
+                              </button>
+                              {idx < STAGES.length - 1 && (
+                                <div className={`w-8 h-[2px] mx-2 rounded-full ${idx < currentIdx ? "bg-green-300" : "bg-gray-300"}`} />
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -856,7 +900,7 @@ export default function Sales() {
 
       {/* -------- EDIT DIALOG -------- */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-[800px]">
+        <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Lead</DialogTitle>
             <DialogDescription>Update lead details for your pipeline.</DialogDescription>
@@ -873,13 +917,10 @@ export default function Sales() {
                 </div>
                 <div className="space-y-2">
                   <Label>Stage</Label>
-                  <Select value={editLead.stage} onValueChange={(v) => setEditLead((p) => ({ ...p, stage: v }))}>
+                  <Select value={editLead.stage} onValueChange={(v) => { setEditLead((p) => ({ ...p, stage: v })); updateLeadStage(editLead.id, v); }}>
                     <SelectTrigger><SelectValue placeholder="Select stage" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Discovery">Discovery</SelectItem>
-                      <SelectItem value="Proposal">Proposal</SelectItem>
-                      <SelectItem value="Negotiation">Negotiation</SelectItem>
-                      <SelectItem value="Closing">Closing</SelectItem>
+                      {STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -890,14 +931,10 @@ export default function Sales() {
                 onChange={(c) => setEditLead((p) => ({ ...p, contacts: c, contact: c?.[0]?.name || p.contact }))}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Deal Value (€)</Label>
                   <Input type="number" value={editLead.value} onChange={(e) => setEditLead((p) => ({ ...p, value: parseFloat(e.target.value || '0') }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Probability (%)</Label>
-                  <Input type="number" min="0" max="100" value={editLead.probability} onChange={(e) => setEditLead((p) => ({ ...p, probability: parseInt(e.target.value || '0', 10) }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Next Action Date</Label>
@@ -908,22 +945,54 @@ export default function Sales() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Lead Source</Label>
-                  <Input value={editLead.source || ''} onChange={(e) => setEditLead((p) => ({ ...p, source: e.target.value }))} />
+                  <Select value={editLead.source || ''} onValueChange={(v) => setEditLead((p) => ({ ...p, source: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Website">Website</SelectItem>
+                      <SelectItem value="Referral">Referral</SelectItem>
+                      <SelectItem value="Cold Call">Cold Call</SelectItem>
+                      <SelectItem value="Partner">Partner</SelectItem>
+                      <SelectItem value="Event">Event</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Region</Label>
-                  <Input value={editLead.region || ''} onChange={(e) => setEditLead((p) => ({ ...p, region: e.target.value }))} />
+                  <Select value={editLead.region || ''} onValueChange={(v) => setEditLead((p) => ({ ...p, region: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select region" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Zagreb">Zagreb</SelectItem>
+                      <SelectItem value="Split-Dalmatia">Split-Dalmatia</SelectItem>
+                      <SelectItem value="Istria">Istria</SelectItem>
+                      <SelectItem value="Zadar">Zadar</SelectItem>
+                      <SelectItem value="Karlovac">Karlovac</SelectItem>
+                      <SelectItem value="Dubrovnik-Neretva">Dubrovnik-Neretva</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Product</Label>
-                  <Input value={editLead.product || ''} onChange={(e) => setEditLead((p) => ({ ...p, product: e.target.value }))} />
+                  <Select value={editLead.product || ''} onValueChange={(v) => setEditLead((p) => ({ ...p, product: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LRSU Management">LRSU Management</SelectItem>
+                      <SelectItem value="Tourism Management">Tourism Management</SelectItem>
+                      <SelectItem value="Port Management">Port Management</SelectItem>
+                      <SelectItem value="Full Suite">Full Suite</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Owner (Assignee)</Label>
-                  <Input value={editLead.assignee || ''} onChange={(e) => setEditLead((p) => ({ ...p, assignee: e.target.value }))} />
+                  <Select value={editLead.assignee || ''} onValueChange={(v) => setEditLead((p) => ({ ...p, assignee: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Assign owner" /></SelectTrigger>
+                    <SelectContent>
+                      {teamDirectory.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <TeamSelector team={editLead.team || []} onChange={(t) => setEditLead((p) => ({ ...p, team: t }))} />
               </div>
@@ -938,7 +1007,8 @@ export default function Sales() {
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
             <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
               if (!editLead?.name) { alert('Name is required'); return; }
-              setLeadsList((prev) => prev.map((l) => l.id === editLead.id ? { ...l, ...editLead } : l));
+              const coercedStatus = getStatusFromStage(editLead.stage);
+              setLeadsList((prev) => prev.map((l) => l.id === editLead.id ? { ...l, ...editLead, status: coercedStatus } : l));
               setIsEditOpen(false);
             }}>Save Changes</Button>
           </DialogFooter>
@@ -958,21 +1028,14 @@ export default function Sales() {
           {selectedLead && (
             <div className="space-y-6">
               {/* Top badges */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="p-3 rounded-lg border">
                   <p className="text-xs text-gray-500">Status</p>
-                  <div className="mt-1"><Badge className={getStatusColor(selectedLead.status)}>{selectedLead.status}</Badge></div>
+                  <div className="mt-1"><Badge className={getStatusColor(getStatusFromStage(selectedLead.stage))}>{getStatusFromStage(selectedLead.stage)}</Badge></div>
                 </div>
                 <div className="p-3 rounded-lg border">
                   <p className="text-xs text-gray-500">Contract Value</p>
                   <p className="text-lg font-semibold">{formatCurrency(selectedLead.value)}</p>
-                </div>
-                <div className="p-3 rounded-lg border">
-                  <p className="text-xs text-gray-500">Probability</p>
-                  <div className="flex items-center gap-2">
-                    <Progress value={selectedLead.probability} className="h-2 flex-1" />
-                    <span className="text-sm">{selectedLead.probability}%</span>
-                  </div>
                 </div>
               </div>
 

@@ -144,8 +144,8 @@ export default function Dashboard() {
     return () => window.removeEventListener('activitiesListUpdated', handler);
   }, []);
 
-  // Team recent tickets: only tickets by other users
-  const recentTeamTickets = teamActivityFeed.filter(item => item?.originalActivity?.isTicket || item?.originalActivity?.ticketType);
+  // Team recent activities: activities by teammates on your projects (excludes your own)
+  const recentTeamActivities = teamActivityFeed;
 
   // Upcoming tasks: current user's tickets
   const upcomingTasks = (Array.isArray(activitiesList) ? activitiesList : [])
@@ -292,18 +292,18 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center space-x-2">
                 <Activity className="h-5 w-5" />
-                <span>Team Recent Tickets</span>
+                <span>Team Recent Activities</span>
               </CardTitle>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/support">
+                <Link to="/projects">
                   View All <ArrowRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentTeamTickets.length > 0 ? (
-              recentTeamTickets.map((activity) => {
+            {recentTeamActivities.length > 0 ? (
+              recentTeamActivities.map((activity) => {
                 const Icon = activity.icon;
                 return (
                   <div
@@ -316,7 +316,7 @@ export default function Dashboard() {
                     <div className="flex-1">
                       <p className="font-medium text-sm">{activity.client}</p>
                       <p className="text-xs text-muted-foreground">
-                        {(activity.originalActivity?.ticketType || 'Ticket')} • {activity.time}
+                        {activity.type || 'Activity'} • {activity.time}
                       </p>
                       <p className="text-xs text-blue-600 font-medium">
                         by {activity.responsiblePerson}
@@ -336,13 +336,13 @@ export default function Dashboard() {
             ) : (
               <div className="text-center py-8">
                 <Activity className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-sm mb-2">No team tickets yet</p>
+                <p className="text-gray-500 text-sm mb-2">No team activities yet</p>
                 <p className="text-xs text-gray-400">
                   {!hasProjects
                     ? "You're not assigned to any projects yet"
                     : userProjects.length > 0
-                      ? "Your teammates haven't created tickets for shared projects yet"
-                      : "Join a project to see team tickets"
+                      ? "Your teammates haven't added activities for shared projects yet"
+                      : "Join a project to see team activities"
                   }
                 </p>
               </div>
@@ -356,10 +356,10 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center space-x-2">
                 <Clock className="h-5 w-5" />
-                <span>Your Upcoming Task</span>
+                <span>Your Upcoming Tasks</span>
               </CardTitle>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/support">
+                <Link to="/activities">
                   View All <ArrowRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>

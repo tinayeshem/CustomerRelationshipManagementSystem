@@ -388,7 +388,7 @@ export default function Activities() {
       return activitiesList.filter(a => isTicket(a) && hasSupportAssignee(a));
     }
     if (user?.department === "Sales") {
-      return activitiesList.filter(a => !isTicket(a));
+      return activitiesList.filter(a => a.category === "Sales");
     }
     return activitiesList;
   }, [activitiesList, user?.department, supportMemberNames]);
@@ -405,7 +405,7 @@ export default function Activities() {
       : (selectedType === "All Types" || activity.activityType === selectedType);
     const matchesCategory = isSupport
       ? true
-      : (selectedCategory === "All Categories" || activity.category === selectedCategory);
+      : true;
     const matchesPremium = isSupport
       ? (selectedPremiumClient === "All" || activity.premiumSupport === (selectedPremiumClient === "Premium"))
       : true;
@@ -1116,7 +1116,7 @@ export default function Activities() {
             </div>
 
             {/* Filter Row 1 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className={`grid gap-4 ${user?.department === 'Support' ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
               <Select value={selectedType} onValueChange={setSelectedType}>
                 <SelectTrigger className="bg-background/80">
                   <SelectValue placeholder={user?.department === 'Support' ? "Category" : "Activity Type"} />
@@ -1128,7 +1128,7 @@ export default function Activities() {
                 </SelectContent>
               </Select>
 
-              {user?.department === 'Support' ? (
+              {user?.department === 'Support' && (
                 <Select value={selectedPremiumClient} onValueChange={setSelectedPremiumClient}>
                   <SelectTrigger className="bg-background/80">
                     <SelectValue placeholder="Premium Clients" />
@@ -1136,23 +1136,6 @@ export default function Activities() {
                   <SelectContent>
                     {["All", "Premium", "Not Premium"].map((opt) => (
                       <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className={`bg-background/80 ${selectedCategory !== "All Categories" ? getCategoryColor(selectedCategory) : ""}`}>
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem
-                        key={category}
-                        value={category}
-                        className={category !== "All Categories" ? getCategoryColor(category) + " hover:opacity-90" : "hover:bg-gray-50"}
-                      >
-                        {category}
-                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
