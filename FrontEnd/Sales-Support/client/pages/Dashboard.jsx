@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
@@ -222,8 +222,20 @@ export default function Dashboard() {
       </div>
 
       {/* Super Cute Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {quickStats.map((stat, index) => {
+      {(() => {
+        const statsForUser = (user?.department === 'Support')
+          ? quickStats.filter(s => s.title !== 'Monthly Revenue')
+          : (user?.department === 'Sales')
+            ? quickStats.filter(s => s.title !== 'Open Tickets')
+            : quickStats;
+        const gridCols = statsForUser.length === 3
+          ? "grid-cols-1 md:grid-cols-3 lg:grid-cols-3"
+          : statsForUser.length === 2
+            ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-2"
+            : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
+        return (
+          <div className={`grid ${gridCols} gap-6`}>
+            {statsForUser.map((stat, index) => {
           const Icon = stat.icon;
           const colors = [
             "from-purple-400 to-pink-400",
@@ -268,8 +280,10 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           );
-        })}
-      </div>
+            })}
+          </div>
+        );
+      })()}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activities */}
