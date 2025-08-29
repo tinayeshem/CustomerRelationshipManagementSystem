@@ -900,7 +900,7 @@ export default function Sales() {
 
       {/* -------- EDIT DIALOG -------- */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-[800px]">
+        <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Lead</DialogTitle>
             <DialogDescription>Update lead details for your pipeline.</DialogDescription>
