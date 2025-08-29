@@ -657,9 +657,6 @@ export default function Sales() {
                 <p className="text-3xl font-bold text-blue-900">{formatCurrency(salesMetrics.totalPipeline)}</p>
                 <p className="text-xs text-blue-600 mt-1">+12% from last month</p>
               </div>
-              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-                <DollarSign className="h-6 w-6 text-white" />
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -677,9 +674,6 @@ export default function Sales() {
                   </p>
                 </div>
               </div>
-              <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
-                <Target className="h-6 w-6 text-white" />
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -692,9 +686,6 @@ export default function Sales() {
                 <p className="text-3xl font-bold text-orange-900">{salesMetrics.conversionRate}%</p>
                 <p className="text-xs text-orange-600 mt-1">+5% from last month</p>
               </div>
-              <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center">
-                <TrendingUp className="h-6 w-6 text-white" />
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -706,9 +697,6 @@ export default function Sales() {
                 <p className="text-sm font-medium text-purple-700">Avg Deal Size</p>
                 <p className="text-3xl font-bold text-purple-900">{formatCurrency(salesMetrics.avgDealSize)}</p>
                 <p className="text-xs text-purple-600 mt-1">+8% from last month</p>
-              </div>
-              <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
-                <Award className="h-6 w-6 text-white" />
               </div>
             </div>
           </CardContent>
