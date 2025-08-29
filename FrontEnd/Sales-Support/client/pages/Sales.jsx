@@ -472,11 +472,11 @@ export default function Sales() {
   // ------- Filters -------
   const [filters, setFilters] = useState({
     search: "",
-    stage: "All",
-    status: "All",
-    region: "All",
-    product: "All",
-    assignee: "All",
+    stage: "All Stages",
+    status: "All Statuses",
+    region: "All Regions",
+    product: "All Products",
+    assignee: "All Owners",
     minVal: "",
     maxVal: "",
     dateFrom: "",
@@ -485,11 +485,11 @@ export default function Sales() {
   const resetFilters = () =>
     setFilters({
       search: "",
-      stage: "All",
-      status: "All",
-      region: "All",
-      product: "All",
-      assignee: "All",
+      stage: "All Stages",
+      status: "All Statuses",
+      region: "All Regions",
+      product: "All Products",
+      assignee: "All Owners",
       minVal: "",
       maxVal: "",
       dateFrom: "",
@@ -500,11 +500,11 @@ export default function Sales() {
     return leadsList.filter((l) => {
       const text = `${l.name} ${l.region} ${l.product} ${l.assignee} ${l.contacts?.map((c) => c.name).join(" ")}`.toLowerCase();
       if (filters.search && !text.includes(filters.search.toLowerCase())) return false;
-      if (filters.stage !== "All" && l.stage !== filters.stage) return false;
-      if (filters.status !== "All" && l.status !== filters.status) return false;
-      if (filters.region !== "All" && l.region !== filters.region) return false;
-      if (filters.product !== "All" && l.product !== filters.product) return false;
-      if (filters.assignee !== "All" && l.assignee !== filters.assignee) return false;
+      if (filters.stage !== "All Stages" && l.stage !== filters.stage) return false;
+      if (filters.status !== "All Statuses" && l.status !== filters.status) return false;
+      if (filters.region !== "All Regions" && l.region !== filters.region) return false;
+      if (filters.product !== "All Products" && l.product !== filters.product) return false;
+      if (filters.assignee !== "All Owners" && l.assignee !== filters.assignee) return false;
       if (filters.minVal && Number(l.value) < Number(filters.minVal)) return false;
       if (filters.maxVal && Number(l.value) > Number(filters.maxVal)) return false;
       // Date range checks (Next Action)
@@ -747,14 +747,14 @@ export default function Sales() {
             <Select value={filters.stage} onValueChange={(v) => setFilters((f) => ({ ...f, stage: v }))}>
               <SelectTrigger><SelectValue placeholder="Filter by Stage" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="All">All stages</SelectItem>
+                <SelectItem value="All Stages">All stages</SelectItem>
                 {STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filters.status} onValueChange={(v) => setFilters((f) => ({ ...f, status: v }))}>
               <SelectTrigger><SelectValue placeholder="Filter by Status" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="All">All statuses</SelectItem>
+                <SelectItem value="All Statuses">All statuses</SelectItem>
                 <SelectItem value="Hot">Hot</SelectItem>
                 <SelectItem value="Warm">Warm</SelectItem>
                 <SelectItem value="Cold">Cold</SelectItem>
@@ -763,7 +763,7 @@ export default function Sales() {
             <Select value={filters.region} onValueChange={(v) => setFilters((f) => ({ ...f, region: v }))}>
               <SelectTrigger><SelectValue placeholder="Filter by Region" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="All">All regions</SelectItem>
+                <SelectItem value="All Regions">All regions</SelectItem>
                 <SelectItem value="Zagreb">Zagreb</SelectItem>
                 <SelectItem value="Split-Dalmatia">Split-Dalmatia</SelectItem>
                 <SelectItem value="Istria">Istria</SelectItem>
@@ -775,7 +775,7 @@ export default function Sales() {
             <Select value={filters.product} onValueChange={(v) => setFilters((f) => ({ ...f, product: v }))}>
               <SelectTrigger><SelectValue placeholder="Filter by Product" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="All">All products</SelectItem>
+                <SelectItem value="All Products">All products</SelectItem>
                 <SelectItem value="LRSU Management">LRSU Management</SelectItem>
                 <SelectItem value="Tourism Management">Tourism Management</SelectItem>
                 <SelectItem value="Port Management">Port Management</SelectItem>
@@ -785,7 +785,7 @@ export default function Sales() {
             <Select value={filters.assignee} onValueChange={(v) => setFilters((f) => ({ ...f, assignee: v }))}>
               <SelectTrigger><SelectValue placeholder="Filter by Owner" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="All">All owners</SelectItem>
+                <SelectItem value="All Owners">All owners</SelectItem>
                 {teamDirectory.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
               </SelectContent>
             </Select>
