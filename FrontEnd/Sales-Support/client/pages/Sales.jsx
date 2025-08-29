@@ -854,6 +854,97 @@ export default function Sales() {
         </CardContent>
       </Card>
 
+      {/* -------- EDIT DIALOG -------- */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>Edit Lead</DialogTitle>
+            <DialogDescription>Update lead details for your pipeline.</DialogDescription>
+          </DialogHeader>
+          {editLead && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Company/Organization *</Label>
+                  <Input
+                    value={editLead.name}
+                    onChange={(e) => setEditLead((p) => ({ ...p, name: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Stage</Label>
+                  <Select value={editLead.stage} onValueChange={(v) => setEditLead((p) => ({ ...p, stage: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select stage" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Discovery">Discovery</SelectItem>
+                      <SelectItem value="Proposal">Proposal</SelectItem>
+                      <SelectItem value="Negotiation">Negotiation</SelectItem>
+                      <SelectItem value="Closing">Closing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <ContactsEditor
+                contacts={editLead.contacts || []}
+                onChange={(c) => setEditLead((p) => ({ ...p, contacts: c, contact: c?.[0]?.name || p.contact }))}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Deal Value (€)</Label>
+                  <Input type="number" value={editLead.value} onChange={(e) => setEditLead((p) => ({ ...p, value: parseFloat(e.target.value || '0') }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Probability (%)</Label>
+                  <Input type="number" min="0" max="100" value={editLead.probability} onChange={(e) => setEditLead((p) => ({ ...p, probability: parseInt(e.target.value || '0', 10) }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Next Action Date</Label>
+                  <Input type="date" value={editLead.nextAction || ''} onChange={(e) => setEditLead((p) => ({ ...p, nextAction: e.target.value }))} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Lead Source</Label>
+                  <Input value={editLead.source || ''} onChange={(e) => setEditLead((p) => ({ ...p, source: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Region</Label>
+                  <Input value={editLead.region || ''} onChange={(e) => setEditLead((p) => ({ ...p, region: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Product</Label>
+                  <Input value={editLead.product || ''} onChange={(e) => setEditLead((p) => ({ ...p, product: e.target.value }))} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Owner (Assignee)</Label>
+                  <Input value={editLead.assignee || ''} onChange={(e) => setEditLead((p) => ({ ...p, assignee: e.target.value }))} />
+                </div>
+                <TeamSelector team={editLead.team || []} onChange={(t) => setEditLead((p) => ({ ...p, team: t }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea rows={3} value={editLead.notes || ''} onChange={(e) => setEditLead((p) => ({ ...p, notes: e.target.value }))} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
+              if (!editLead?.name) { alert('Name is required'); return; }
+              setLeadsList((prev) => prev.map((l) => l.id === editLead.id ? { ...l, ...editLead } : l));
+              setIsEditOpen(false);
+            }}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* -------- VIEW DIALOG -------- */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
         <DialogContent className="max-w-3xl">
