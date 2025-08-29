@@ -1128,7 +1128,7 @@ export default function Activities() {
                 </SelectContent>
               </Select>
 
-              {user?.department === 'Support' ? (
+              {user?.department === 'Support' && (
                 <Select value={selectedPremiumClient} onValueChange={setSelectedPremiumClient}>
                   <SelectTrigger className="bg-background/80">
                     <SelectValue placeholder="Premium Clients" />
@@ -1136,23 +1136,6 @@ export default function Activities() {
                   <SelectContent>
                     {["All", "Premium", "Not Premium"].map((opt) => (
                       <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className={`bg-background/80 ${selectedCategory !== "All Categories" ? getCategoryColor(selectedCategory) : ""}`}>
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem
-                        key={category}
-                        value={category}
-                        className={category !== "All Categories" ? getCategoryColor(category) + " hover:opacity-90" : "hover:bg-gray-50"}
-                      >
-                        {category}
-                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
