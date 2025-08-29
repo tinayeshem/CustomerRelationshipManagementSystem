@@ -1116,7 +1116,7 @@ export default function Activities() {
             </div>
 
             {/* Filter Row 1 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className={`grid gap-4 ${user?.department === 'Support' ? 'grid-cols-1 md:grid-cols-3' : 'grid-cols-1 md:grid-cols-2'}`}>
               <Select value={selectedType} onValueChange={setSelectedType}>
                 <SelectTrigger className="bg-background/80">
                   <SelectValue placeholder={user?.department === 'Support' ? "Category" : "Activity Type"} />
