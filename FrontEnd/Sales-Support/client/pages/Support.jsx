@@ -362,10 +362,10 @@ export default function Support() {
           <CardDescription>Access frequently used support management features</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <Button
               onClick={showHighPriorityTickets}
-              className="h-20 flex-col space-y-2 bg-gradient-to-br from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700"
+              className="w-full h-24 flex flex-col items-center justify-center gap-2 text-center bg-gradient-to-br from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700"
             >
               <AlertTriangle className="h-6 w-6" />
               <span className="text-sm">High Priority Tickets</span>
@@ -374,7 +374,7 @@ export default function Support() {
 
             <Button
               onClick={showOverdueItems}
-              className="h-20 flex-col space-y-2 bg-gradient-to-br from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700"
+              className="w-full h-24 flex flex-col items-center justify-center gap-2 text-center bg-gradient-to-br from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700"
             >
               <Clock className="h-6 w-6" />
               <span className="text-sm">Overdue Items</span>
@@ -383,7 +383,7 @@ export default function Support() {
 
             <Button
               onClick={showPremiumSupport}
-              className="h-20 flex-col space-y-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
+              className="w-full h-24 flex flex-col items-center justify-center gap-2 text-center bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
             >
               <Star className="h-6 w-6" />
               <span className="text-sm">Premium Support</span>
