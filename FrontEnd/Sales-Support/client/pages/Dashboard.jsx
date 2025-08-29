@@ -126,13 +126,53 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { teamActivityFeed, hasProjects, userProjects } = useTeamActivityFeed(3);
 
-  // Use real team activities from projects the user is assigned to
-  const recentActivities = teamActivityFeed;
+  // Load activities to derive user's tickets
+  const [activitiesList, setActivitiesList] = useState([]);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('activitiesList');
+      setActivitiesList(saved ? JSON.parse(saved) : []);
+    } catch { setActivitiesList([]); }
+    const handler = () => {
+      try {
+        const saved = localStorage.getItem('activitiesList');
+        setActivitiesList(saved ? JSON.parse(saved) : []);
+      } catch {}
+    };
+    window.addEventListener('activitiesListUpdated', handler);
+    return () => window.removeEventListener('activitiesListUpdated', handler);
+  }, []);
 
-  // Filter upcoming tasks to show only tasks assigned to the current user
-  const upcomingTasks = allUpcomingTasks
-    .filter(task => task.assignedTo === user?.name)
-    .slice(0, 3); // Show only the 3 most urgent
+  // Team recent tickets: only tickets by other users
+  const recentTeamTickets = teamActivityFeed.filter(item => item?.originalActivity?.isTicket || item?.originalActivity?.ticketType);
+
+  // Upcoming tasks: current user's tickets
+  const upcomingTasks = (Array.isArray(activitiesList) ? activitiesList : [])
+    .filter(a => a?.isTicket || a?.ticketType)
+    .filter(a => {
+      const resp = a?.responsible;
+      if (Array.isArray(resp)) return resp.includes(user?.name);
+      if (typeof resp === 'string') return resp === (user?.name || '');
+      return false;
+    })
+    .sort((a,b) => {
+      const parse = (x) => {
+        if (x?.deadline) return new Date(`${x.deadline}T23:59:59`).getTime();
+        const t = x?.time || '00:00';
+        const d = x?.date || '';
+        const dt = new Date(`${d}T${t}:00`).getTime();
+        return isNaN(dt) ? 0 : dt;
+      };
+      return parse(a) - parse(b);
+    })
+    .slice(0, 3)
+    .map(a => ({
+      id: a.id,
+      title: a.notes || `${a.ticketType || 'Ticket'} - ${a.linkedClient || ''}`,
+      time: a.deadline ? `Due: ${a.deadline}` : `${a.date || ''}${a.time ? ' • ' + a.time : ''}`,
+      client: a.linkedClient || '',
+      priority: a.priority || 'Medium'
+    }));
 
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen relative overflow-hidden">
@@ -247,8 +287,8 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recentActivities.length > 0 ? (
-              recentActivities.map((activity) => {
+            {recentTeamTickets.length > 0 ? (
+              recentTeamTickets.map((activity) => {
                 const Icon = activity.icon;
                 return (
                   <div
@@ -286,8 +326,8 @@ export default function Dashboard() {
                   {!hasProjects
                     ? "You're not assigned to any projects yet"
                     : userProjects.length > 0
-                      ? "Your teammates haven't created activities for shared projects yet"
-                      : "Join a project to see team activities"
+                      ? "Your teammates haven't created tickets for shared projects yet"
+                      : "Join a project to see team tickets"
                   }
                 </p>
               </div>
