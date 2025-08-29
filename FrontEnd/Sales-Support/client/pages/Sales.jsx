@@ -470,9 +470,10 @@ export default function Sales() {
   };
 
   const updateLeadStage = (leadId, toStage) => {
-    setLeadsList((prev) => prev.map((l) => (l.id === leadId ? { ...l, stage: toStage } : l)));
-    setEditLead((prev) => (prev && prev.id === leadId ? { ...prev, stage: toStage } : prev));
-    setSelectedLead((prev) => (prev && prev.id === leadId ? { ...prev, stage: toStage } : prev));
+    const newStatus = getStatusFromStage(toStage);
+    setLeadsList((prev) => prev.map((l) => (l.id === leadId ? { ...l, stage: toStage, status: newStatus } : l)));
+    setEditLead((prev) => (prev && prev.id === leadId ? { ...prev, stage: toStage, status: newStatus } : prev));
+    setSelectedLead((prev) => (prev && prev.id === leadId ? { ...prev, stage: toStage, status: newStatus } : prev));
   };
 
   // ------- Filters -------
