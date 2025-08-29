@@ -548,10 +548,6 @@ export default function Projects() {
                   }}>
                     Edit
                   </Button>
-                  <Button size="sm" variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => loadAuditTrail(p.id)}>
-                    <History className="h-3 w-3 mr-1" />
-                    History
-                  </Button>
                 </div>
               </div>
               {!!p.assignedMembers?.length && (
