@@ -945,22 +945,54 @@ export default function Sales() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Lead Source</Label>
-                  <Input value={editLead.source || ''} onChange={(e) => setEditLead((p) => ({ ...p, source: e.target.value }))} />
+                  <Select value={editLead.source || ''} onValueChange={(v) => setEditLead((p) => ({ ...p, source: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Website">Website</SelectItem>
+                      <SelectItem value="Referral">Referral</SelectItem>
+                      <SelectItem value="Cold Call">Cold Call</SelectItem>
+                      <SelectItem value="Partner">Partner</SelectItem>
+                      <SelectItem value="Event">Event</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Region</Label>
-                  <Input value={editLead.region || ''} onChange={(e) => setEditLead((p) => ({ ...p, region: e.target.value }))} />
+                  <Select value={editLead.region || ''} onValueChange={(v) => setEditLead((p) => ({ ...p, region: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select region" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Zagreb">Zagreb</SelectItem>
+                      <SelectItem value="Split-Dalmatia">Split-Dalmatia</SelectItem>
+                      <SelectItem value="Istria">Istria</SelectItem>
+                      <SelectItem value="Zadar">Zadar</SelectItem>
+                      <SelectItem value="Karlovac">Karlovac</SelectItem>
+                      <SelectItem value="Dubrovnik-Neretva">Dubrovnik-Neretva</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Product</Label>
-                  <Input value={editLead.product || ''} onChange={(e) => setEditLead((p) => ({ ...p, product: e.target.value }))} />
+                  <Select value={editLead.product || ''} onValueChange={(v) => setEditLead((p) => ({ ...p, product: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LRSU Management">LRSU Management</SelectItem>
+                      <SelectItem value="Tourism Management">Tourism Management</SelectItem>
+                      <SelectItem value="Port Management">Port Management</SelectItem>
+                      <SelectItem value="Full Suite">Full Suite</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Owner (Assignee)</Label>
-                  <Input value={editLead.assignee || ''} onChange={(e) => setEditLead((p) => ({ ...p, assignee: e.target.value }))} />
+                  <Select value={editLead.assignee || ''} onValueChange={(v) => setEditLead((p) => ({ ...p, assignee: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Assign owner" /></SelectTrigger>
+                    <SelectContent>
+                      {teamDirectory.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <TeamSelector team={editLead.team || []} onChange={(t) => setEditLead((p) => ({ ...p, team: t }))} />
               </div>
