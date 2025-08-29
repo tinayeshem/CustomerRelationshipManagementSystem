@@ -244,6 +244,42 @@ export default function Support() {
 
   const premiumTickets = allTickets.filter(ticket => ticket.premium);
 
+  // Activities-style filters for Support
+  const supportTicketCategories = ["All Categories", "Bug", "Question", "Feature", "Training"];
+  const statuses = ["All Statuses", "To Do", "In Progress", "Done"];
+  const priorities = ["All Priorities", "Low", "Medium", "High", "Urgent"];
+  const teamMembersOptions = ["All Members", ...TEAM_MEMBERS.map(m => m.name)];
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedType, setSelectedType] = useState("All Categories");
+  const [selectedPremiumClient, setSelectedPremiumClient] = useState("All");
+  const [selectedStatus, setSelectedStatus] = useState("All Statuses");
+  const [selectedMember, setSelectedMember] = useState("All Members");
+  const [selectedPriority, setSelectedPriority] = useState("All Priorities");
+  const [selectedClient, setSelectedClient] = useState("All Clients");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const clientsOptions = Array.from(new Set(["All Clients", ...clients, ...((activitiesList||[]).map(a => a.linkedClient))])).filter(Boolean);
+
+  const filteredSupportActivities = (activitiesList || []).filter(a => a?.isTicket || a?.ticketType).filter((activity) => {
+    const responsibleString = Array.isArray(activity.responsible) ? activity.responsible.join(", ") : (activity.responsible || "");
+    const matchesSearch = (activity.linkedClient || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         responsibleString.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (activity.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = selectedType === "All Categories" || activity.ticketType === selectedType;
+    const matchesPremium = selectedPremiumClient === "All" || !!activity.premiumSupport === (selectedPremiumClient === "Premium");
+    const matchesStatus = selectedStatus === "All Statuses" || activity.status === selectedStatus;
+    const matchesMember = selectedMember === "All Members" || responsibleString.includes(selectedMember);
+    const matchesPriority = selectedPriority === "All Priorities" || activity.priority === selectedPriority;
+    const matchesClient = selectedClient === "All Clients" || activity.linkedClient === selectedClient;
+    const matchesFromDate = !fromDate || (activity.date || "") >= fromDate;
+    const matchesToDate = !toDate || (activity.date || "") <= toDate;
+
+    return matchesSearch && matchesType && matchesPremium && matchesStatus &&
+           matchesMember && matchesPriority && matchesClient && matchesFromDate && matchesToDate;
+  });
+
   const showHighPriorityTickets = () => {
     setSelectedTickets(highPriorityTickets);
     setIsHighPriorityDialogOpen(true);
@@ -263,7 +299,12 @@ export default function Support() {
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
       {/* Header */}
-      <div className="flex items-center justify-end mb-4">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <a href="/projects">
+            <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">Create Project</Button>
+          </a>
+        </div>
         <Button
           onClick={() => setIsRegisterDialogOpen(true)}
           className="bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
@@ -355,6 +396,122 @@ export default function Support() {
         </Card>
       </div>
 
+      {/* Advanced Ticket Filters (from Activities) */}
+      <Card className="border border-blue-200 bg-white shadow-lg">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-dark-blue">Advanced Ticket Filters</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  setSelectedType("All Categories");
+                  setSelectedPremiumClient("All");
+                  setSelectedStatus("All Statuses");
+                  setSelectedMember("All Members");
+                  setSelectedPriority("All Priorities");
+                  setSelectedClient("All Clients");
+                  setFromDate("");
+                  setToDate("");
+                }}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
+              >
+                Reset Filters
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search tickets, clients, or notes..."
+                className="pl-10 bg-background/80"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger className="bg-background/80">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {supportTicketCategories.map((type) => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedPremiumClient} onValueChange={setSelectedPremiumClient}>
+                <SelectTrigger className="bg-background/80">
+                  <SelectValue placeholder="Premium Clients" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["All", "Premium", "Not Premium"].map((opt) => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="bg-background/80">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statuses.map((status) => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Select value={selectedClient} onValueChange={setSelectedClient}>
+                <SelectTrigger className="bg-background/80">
+                  <SelectValue placeholder="Client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientsOptions.map((client) => (
+                    <SelectItem key={client} value={client}>{client}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedMember} onValueChange={setSelectedMember}>
+                <SelectTrigger className="bg-background/80">
+                  <SelectValue placeholder="Team Member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamMembersOptions.map((member) => (
+                    <SelectItem key={member} value={member}>{member}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedPriority} onValueChange={setSelectedPriority}>
+                <SelectTrigger className="bg-background/80">
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  {priorities.map((priority) => (
+                    <SelectItem key={priority} value={priority}>{priority}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fromDate" className="text-sm font-medium text-gray-700">From Date</Label>
+                <Input id="fromDate" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="bg-background/80" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="toDate" className="text-sm font-medium text-gray-700">To Date</Label>
+                <Input id="toDate" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="bg-background/80" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Quick Actions */}
       <Card className="border border-blue-200 bg-white shadow-lg">
         <CardHeader>
@@ -393,6 +550,68 @@ export default function Support() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Tickets List (from Activities) */}
+      <div className="space-y-4">
+        {filteredSupportActivities.map((activity) => (
+          <Card key={activity.id} className="border-blue-200/50 bg-white/90 backdrop-blur-sm hover:shadow-lg transition-all duration-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-3 mt-1">
+                    <h3 className="font-semibold text-foreground">{activity.linkedClient}</h3>
+                    <Badge variant="outline">{activity.status}</Badge>
+                    {activity.ticketType && (
+                      <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+                        {activity.ticketType}
+                      </Badge>
+                    )}
+                    {activity.premiumSupport && (
+                      <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">Premium</Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">{activity.notes}</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-muted-foreground mb-3">
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>{activity.date} at {activity.time}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <User className="h-3 w-3" />
+                      <span>{Array.isArray(activity.responsible) ? activity.responsible.join(", ") : activity.responsible}</span>
+                    </div>
+                    {activity.deadline && (
+                      <div className="flex items-center space-x-1">
+                        <Clock className="h-3 w-3" />
+                        <span>Due: {activity.deadline}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end space-y-2 mt-1">
+                  <Badge className={getPriorityColor((activity.priority || '').toLowerCase())}>
+                    {activity.priority}
+                  </Badge>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        try { localStorage.setItem('openActivityId', String(activity.id)); } catch {}
+                        window.location.href = '/activities';
+                      }}
+                      className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      View
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {/* Recent Tickets and Team Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
