@@ -399,7 +399,7 @@ export default function Dashboard() {
               asChild
               className="h-20 flex-col space-y-2 bg-gradient-to-br from-blue-100 to-blue-200 text-blue-800 hover:from-blue-200 hover:to-blue-300 border border-blue-200 shadow-md transition-all duration-300 hover:shadow-lg"
             >
-              <Link to="/support">
+              <Link to="/activities">
                 <Activity className="h-6 w-6" />
                 <span className="text-sm font-medium">New Activity</span>
               </Link>
