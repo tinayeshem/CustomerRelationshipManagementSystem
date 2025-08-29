@@ -127,7 +127,6 @@ export default function Projects() {
     organizationId: "",
     goal: "",
     notes: "",
-    stages: PHASES.map((s) => ({ name: s, completed: false })),
     assignedMembers: [],
     selectedActivityIds: []
   });
@@ -161,7 +160,6 @@ export default function Projects() {
     organizationId: "",
     goal: "",
     notes: "",
-    stages: PHASES.map((s) => ({ name: s, completed: false })),
     assignedMembers: [],
     selectedActivityIds: []
   });
@@ -181,8 +179,6 @@ export default function Projects() {
       organizationName: org?.organizationName,
       goal: createForm.goal,
       notes: createForm.notes,
-      stages: PHASES.map((s, idx) => ({ name: s, completed: false, order: idx + 1 })),
-      currentStage: currentFromOrg,
       assignedMembers: createForm.assignedMembers,
       activityIds: [...createForm.selectedActivityIds],
       createdAt: new Date().toISOString()
@@ -456,19 +452,6 @@ export default function Projects() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-blue-800 flex items-center gap-2"><Layers className="h-4 w-4" /> Stages</h3>
-                  <div className="space-y-2">
-                    {PHASES.map((name, idx) => (
-                      <div key={name} className="flex items-center justify-between p-2 rounded bg-blue-50">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className={getStageBadge(name)}>{idx + 1}</Badge>
-                          <span className="text-sm">{name}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-blue-800 flex items-center gap-2"><Users className="h-4 w-4" /> Assign Members</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {availableMembers.map((m) => (
@@ -545,17 +528,6 @@ export default function Projects() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
-                {/* Current Stage and Stage Controls */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="outline" className={getStageBadge(p.currentStage)}>{p.currentStage}</Badge>
-                  <Button size="sm" variant="outline" className="border-gray-200 text-gray-700 hover:bg-gray-50" onClick={() => goBackStage(p)}>
-                    Go Back Stage
-                  </Button>
-                  <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => advanceStage(p)}>
-                    Advance Stage
-                  </Button>
-                </div>
-
                 {/* Project Actions */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <Button size="sm" variant="outline" className="border-green-200 text-green-700 hover:bg-green-50" onClick={() => setAddActivityFor(p)}>
@@ -578,16 +550,6 @@ export default function Projects() {
                     <History className="h-3 w-3 mr-1" />
                     History
                   </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-xs text-muted-foreground">Stages</p>
-                <div className="flex flex-wrap gap-2">
-                  {p.stages.map((s, idx) => (
-                    <button key={s.name} className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold ${s.completed ? "bg-green-100 text-green-800 border-green-200" : "bg-gray-100 text-gray-800 border-gray-200"}`} onClick={() => setProjectStage(p, s.name)}>
-                      {idx + 1}. {s.name}
-                    </button>
-                  ))}
                 </div>
               </div>
               {!!p.assignedMembers?.length && (
@@ -648,17 +610,6 @@ export default function Projects() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Current Stage</Label>
-                  <Select value={editForm.currentStage} onValueChange={(v) => setEditForm({ ...editForm, currentStage: v })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select stage" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PHASES.map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
                   <Label>Assigned Members</Label>
                   <div className="grid grid-cols-2 gap-2">
                     {editAvailableMembers.map((m) => (
@@ -686,12 +637,9 @@ export default function Projects() {
             <Button className="bg-dark-blue hover:bg-dark-blue-hover text-white" onClick={() => {
               if (!editingProject || !editForm.name) { alert('Project name is required'); return; }
               try {
-                const stageOrder = PHASES;
-                const toIdx = stageOrder.indexOf(editForm.currentStage);
                 const updated = projects.map(p => {
                   if (p.id !== editingProject.id) return p;
-                  const newStages = p.stages.map((s, i) => ({ ...s, completed: i <= toIdx }));
-                  return { ...p, name: editForm.name, goal: editForm.goal, notes: editForm.notes, assignedMembers: editForm.assignedMembers, currentStage: editForm.currentStage, stages: newStages };
+                  return { ...p, name: editForm.name, goal: editForm.goal, notes: editForm.notes, assignedMembers: editForm.assignedMembers };
                 });
                 saveProjects(updated);
                 setIsEditOpen(false);
