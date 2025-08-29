@@ -834,6 +834,14 @@ export default function Sales() {
                       <Eye className="h-3 w-3 mr-1" />
                       View
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                      onClick={() => { setEditLead(lead); setIsEditOpen(true); }}
+                    >
+                      Edit
+                    </Button>
                   </div>
                 </div>
               </div>
