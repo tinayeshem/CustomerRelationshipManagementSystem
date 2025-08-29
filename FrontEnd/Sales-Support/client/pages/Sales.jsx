@@ -602,8 +602,8 @@ export default function Sales() {
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Charts (removed per request) */}
+      <div className="hidden">
         <Card className="border-blue-200">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
