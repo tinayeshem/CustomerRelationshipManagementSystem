@@ -127,6 +127,16 @@ const regionData = [
 
 const teamDirectory = TEAM_MEMBER_NAMES;
 
+// Unified pipeline stages for Sales
+const STAGES = [
+  "First Contacted",
+  "Interested",
+  "Offer Sent",
+  "Accepted",
+  "Contract Signed",
+  "Implementation",
+];
+
 // ---------------- Helpers ----------------
 const getStatusColor = (status) => {
   switch (status) {
@@ -138,10 +148,12 @@ const getStatusColor = (status) => {
 };
 const getStageColor = (stage) => {
   switch (stage) {
-    case "Discovery": return "bg-blue-100 text-blue-800 border-blue-200";
-    case "Proposal": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "Negotiation": return "bg-orange-100 text-orange-800 border-orange-200";
-    case "Closing": return "bg-green-100 text-green-800 border-green-200";
+    case "First Contacted": return "bg-blue-100 text-blue-800 border-blue-200";
+    case "Interested": return "bg-blue-100 text-blue-800 border-blue-200";
+    case "Offer Sent": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "Accepted": return "bg-green-100 text-green-800 border-green-200";
+    case "Contract Signed": return "bg-purple-100 text-purple-800 border-purple-200";
+    case "Implementation": return "bg-indigo-100 text-indigo-800 border-indigo-200";
     default: return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
@@ -324,7 +336,7 @@ export default function Sales() {
       email: o?.email || "",
       value: 0,
       probability: 10,
-      stage: "Discovery",
+      stage: STAGES[0],
       source: "Organization",
       region: o?.region || "",
       product: "",
@@ -360,7 +372,7 @@ export default function Sales() {
     contacts: [{ name: "", role: "Primary", phone: "", email: "" }],
     value: "",
     probability: 50,
-    stage: "Discovery",
+    stage: STAGES[0],
     source: "",
     region: "",
     product: "",
@@ -409,7 +421,7 @@ export default function Sales() {
       contacts: [{ name: "", role: "Primary", phone: "", email: "" }],
       value: "",
       probability: 50,
-      stage: "Discovery",
+      stage: STAGES[0],
       source: "",
       region: "",
       product: "",
@@ -419,6 +431,12 @@ export default function Sales() {
       notes: "",
     });
     setIsNewOpen(false);
+  };
+
+  const updateLeadStage = (leadId, toStage) => {
+    setLeadsList((prev) => prev.map((l) => (l.id === leadId ? { ...l, stage: toStage } : l)));
+    setEditLead((prev) => (prev && prev.id === leadId ? { ...prev, stage: toStage } : prev));
+    setSelectedLead((prev) => (prev && prev.id === leadId ? { ...prev, stage: toStage } : prev));
   };
 
   // ------- Filters -------
@@ -499,10 +517,7 @@ export default function Sales() {
                     <Select value={newLead.stage} onValueChange={(v) => handleNewChange("stage", v)}>
                       <SelectTrigger><SelectValue placeholder="Select stage" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Discovery">Discovery</SelectItem>
-                        <SelectItem value="Proposal">Proposal</SelectItem>
-                        <SelectItem value="Negotiation">Negotiation</SelectItem>
-                        <SelectItem value="Closing">Closing</SelectItem>
+                        {STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -715,10 +730,7 @@ export default function Sales() {
               <SelectTrigger><SelectValue placeholder="Filter by Stage" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All stages</SelectItem>
-                <SelectItem value="Discovery">Discovery</SelectItem>
-                <SelectItem value="Proposal">Proposal</SelectItem>
-                <SelectItem value="Negotiation">Negotiation</SelectItem>
-                <SelectItem value="Closing">Closing</SelectItem>
+                {STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filters.status} onValueChange={(v) => setFilters((f) => ({ ...f, status: v }))}>
@@ -819,6 +831,27 @@ export default function Sales() {
                         <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${lead.probability}%` }} />
                       </div>
                     </div>
+
+                    <div className="mt-3">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {STAGES.map((s, idx) => {
+                          const currentIdx = STAGES.indexOf(lead.stage);
+                          const isCompleted = idx < currentIdx;
+                          const isCurrent = idx === currentIdx;
+                          return (
+                            <div key={s} className="flex items-center">
+                              <button type="button" onClick={() => updateLeadStage(lead.id, s)} className={`flex items-center gap-1 ${isCompleted ? "text-green-700" : isCurrent ? "text-blue-700" : "text-gray-400"}`}>
+                                <span className={`w-2 h-2 rounded-full ${isCompleted ? "bg-green-600" : isCurrent ? "bg-blue-600" : "bg-gray-300"}`} />
+                                <span className="text-xs font-medium">{s}</span>
+                              </button>
+                              {idx < STAGES.length - 1 && (
+                                <div className={`w-8 h-[2px] mx-2 rounded-full ${idx < currentIdx ? "bg-green-300" : "bg-gray-300"}`} />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex items-center space-x-2 ml-4">
@@ -873,13 +906,10 @@ export default function Sales() {
                 </div>
                 <div className="space-y-2">
                   <Label>Stage</Label>
-                  <Select value={editLead.stage} onValueChange={(v) => setEditLead((p) => ({ ...p, stage: v }))}>
+                  <Select value={editLead.stage} onValueChange={(v) => { setEditLead((p) => ({ ...p, stage: v })); updateLeadStage(editLead.id, v); }}>
                     <SelectTrigger><SelectValue placeholder="Select stage" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Discovery">Discovery</SelectItem>
-                      <SelectItem value="Proposal">Proposal</SelectItem>
-                      <SelectItem value="Negotiation">Negotiation</SelectItem>
-                      <SelectItem value="Closing">Closing</SelectItem>
+                      {STAGES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
