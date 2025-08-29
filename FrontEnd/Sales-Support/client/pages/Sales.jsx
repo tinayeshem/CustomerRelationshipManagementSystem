@@ -283,6 +283,72 @@ export default function Sales() {
 
   const [leadsList, setLeadsList] = useState([]);
   const [isNewOpen, setIsNewOpen] = useState(false);
+
+  // Load organizations from Organization dashboard
+  const [organizations, setOrganizations] = useState(() => {
+    try {
+      const saved = localStorage.getItem("organizationData");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    const reloadOrgs = () => {
+      try {
+        const saved = localStorage.getItem("organizationData");
+        setOrganizations(saved ? JSON.parse(saved) : []);
+      } catch {
+        setOrganizations([]);
+      }
+    };
+    window.addEventListener("organizationDataUpdated", reloadOrgs);
+    const onVis = () => { if (!document.hidden) reloadOrgs(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("organizationDataUpdated", reloadOrgs);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
+
+  // Initialize/Sync leads from organizations
+  useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
+    const mapped = (organizations || []).map((o, idx) => ({
+      id: `LEAD-ORG-${o?.id ?? idx}`,
+      name: o?.organizationName || o?.name || "Organization",
+      contacts: [],
+      contact: "",
+      phone: o?.phone || "",
+      email: o?.email || "",
+      value: 0,
+      probability: 10,
+      stage: "Discovery",
+      source: "Organization",
+      region: o?.region || "",
+      product: "",
+      assignee: "",
+      team: Array.isArray(o?.responsibleMembers) ? o.responsibleMembers : [],
+      created: today,
+      nextAction: "",
+      status: "Cold",
+      timeSpent: 0,
+      lastActivity: today
+    }));
+
+    const initFlag = localStorage.getItem("sales_init_from_orgs") === "1";
+    if (!initFlag) {
+      setLeadsList(mapped);
+      localStorage.setItem("sales_init_from_orgs", "1");
+      return;
+    }
+    // After initial replacement, keep org-derived leads in sync but retain user-added leads
+    setLeadsList((prev) => {
+      const nonOrg = Array.isArray(prev) ? prev.filter(l => typeof l?.id !== "string" || !l.id.startsWith("LEAD-ORG-")) : [];
+      return [...mapped, ...nonOrg];
+    });
+  }, [organizations]);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
 
