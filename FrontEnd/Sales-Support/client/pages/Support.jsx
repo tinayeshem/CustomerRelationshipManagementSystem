@@ -434,7 +434,7 @@ export default function Support() {
         </Card>
 
         {/* Team Performance */}
-        <Card className="border border-blue-200 bg-white shadow-lg">
+        <Card className="hidden">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="text-dark-blue">Team Performance</span>
