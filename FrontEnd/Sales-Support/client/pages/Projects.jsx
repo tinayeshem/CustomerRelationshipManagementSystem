@@ -560,6 +560,23 @@ export default function Projects() {
                   </div>
                 </div>
               )}
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">Activities</p>
+                <div className="space-y-1">
+                  {Array.isArray(p.cardActivities) && p.cardActivities.length > 0 ? (
+                    p.cardActivities.map((a) => (
+                      <div key={a.id} className="text-sm flex items-center justify-between p-2 rounded bg-background/50">
+                        <div>
+                          <span className="font-medium">{a.activityType}</span> • {a.date} {a.time}
+                        </div>
+                        <div className="text-xs text-muted-foreground">{Array.isArray(a.responsible) ? a.responsible.join(", ") : a.responsible}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-gray-600">No activities added yet.</p>
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
         ))}
