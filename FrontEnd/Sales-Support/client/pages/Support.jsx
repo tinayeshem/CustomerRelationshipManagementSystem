@@ -498,7 +498,6 @@ export default function Support() {
                       <Badge className={`${getPriorityColor(ticket.priority)}`}>
                         {ticket.priority.toUpperCase()}
                       </Badge>
-                      <Badge variant="outline">{ticket.id}</Badge>
                       {ticket.premium && <Badge className="bg-yellow-100 text-yellow-800">PREMIUM</Badge>}
                     </div>
                     <h3 className="font-semibold text-gray-800 mb-2">{ticket.title}</h3>
@@ -516,7 +515,13 @@ export default function Support() {
                     <Badge className={`${getStatusColor(ticket.status)}`}>
                       {ticket.status}
                     </Badge>
-                    <Button size="sm" className="bg-dark-blue hover:bg-dark-blue-hover text-white">
+                    <Button size="sm" className="bg-dark-blue hover:bg-dark-blue-hover text-white" onClick={() => {
+                      try {
+                        const id = typeof ticket.id === 'string' && ticket.id.startsWith('TKT-') ? ticket.id.slice(4) : '';
+                        if (id) localStorage.setItem('openActivityId', id);
+                      } catch {}
+                      window.location.href = '/activities';
+                    }}>
                       <Eye className="h-3 w-3 mr-1" />
                       View
                     </Button>
