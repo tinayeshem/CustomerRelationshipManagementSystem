@@ -849,18 +849,12 @@ export default function Sales() {
                     </div>
 
                     <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
-                      <span>Probability: {lead.probability}%</span>
                       <span>Product: {lead.product}</span>
                       <span>Owner: {lead.assignee || "—"}</span>
                       <span>Team: {lead.team?.length ? `${lead.team.length} member(s)` : "—"}</span>
                       <span>Next Action: {lead.nextAction || "—"}</span>
                     </div>
 
-                    <div className="mt-2">
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-600 h-2 rounded-full transition-all duration-300" style={{ width: `${lead.probability}%` }} />
-                      </div>
-                    </div>
 
                     <div className="mt-3">
                       <div className="flex items-center gap-2 flex-wrap">
@@ -1010,7 +1004,7 @@ export default function Sales() {
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>
-              {selectedLead?.name} �� <span className="text-sm font-normal">Complete Profile</span>
+              {selectedLead?.name} — <span className="text-sm font-normal">Complete Profile</span>
             </DialogTitle>
             <DialogDescription>Comprehensive client information and deal details.</DialogDescription>
           </DialogHeader>
