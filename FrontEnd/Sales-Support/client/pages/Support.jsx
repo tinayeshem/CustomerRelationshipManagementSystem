@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TEAM_MEMBERS } from "@/constants/teamMembers";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -157,6 +158,7 @@ const formatTimeAgo = (dateString) => {
 };
 
 export default function Support() {
+  const { user } = useAuth();
   const [selectedTickets, setSelectedTickets] = useState([]);
   const [selectedTeamMember, setSelectedTeamMember] = useState(null);
   const [isHighPriorityDialogOpen, setIsHighPriorityDialogOpen] = useState(false);
@@ -179,17 +181,69 @@ export default function Support() {
   const defaultClients = ["Zagreb Municipality", "Sports Club Dinamo", "Split City Council", "Tech Solutions Ltd"];
   const clients = Array.from(new Set([...defaultClients, ...orgNames]));
 
-  const highPriorityTickets = supportTickets.filter(ticket =>
+  // Load activities and derive support tickets from localStorage
+  const [activitiesList, setActivitiesList] = useState([]);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('activitiesList');
+      setActivitiesList(saved ? JSON.parse(saved) : []);
+    } catch { setActivitiesList([]); }
+    const handler = () => {
+      try {
+        const saved = localStorage.getItem('activitiesList');
+        setActivitiesList(saved ? JSON.parse(saved) : []);
+      } catch {}
+    };
+    window.addEventListener('activitiesListUpdated', handler);
+    return () => window.removeEventListener('activitiesListUpdated', handler);
+  }, []);
+
+  const derivedTickets = (Array.isArray(activitiesList) ? activitiesList : [])
+    .filter(a => a?.isTicket || a?.ticketType)
+    .map(a => {
+      const priority = (a.priority || "").toString().toLowerCase();
+      const statusRaw = (a.status || "").toString().toLowerCase();
+      const status = statusRaw === 'to do' || statusRaw === 'todo' ? 'open'
+        : statusRaw === 'in progress' ? 'in-progress'
+        : statusRaw === 'done' ? 'resolved' : statusRaw;
+      const createdIso = (() => {
+        const dt = `${a.date || ''}T${a.time || '00:00'}`;
+        const d = new Date(dt);
+        return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+      })();
+      const dueIso = a.deadline ? new Date(`${a.deadline}T23:59:59`).toISOString() : null;
+      const assignee = Array.isArray(a.responsible) ? a.responsible.join(', ') : (a.responsible || '');
+      const title = a.notes || `${a.ticketType || 'Ticket'} - ${a.linkedClient || ''}`;
+      return {
+        id: `TKT-${a.id}`,
+        title,
+        client: a.linkedClient || '',
+        priority,
+        status,
+        assignee,
+        created: createdIso,
+        dueDate: dueIso,
+        category: a.ticketType || '',
+        type: 'Support',
+        premium: !!a.premiumSupport,
+        description: a.notes || ''
+      };
+    });
+
+  const allTickets = derivedTickets.length > 0 ? derivedTickets : supportTickets;
+
+  const highPriorityTickets = allTickets.filter(ticket =>
     ticket.priority === "urgent" || ticket.priority === "high"
   );
 
-  const overdueTickets = supportTickets.filter(ticket => {
+  const overdueTickets = allTickets.filter(ticket => {
+    if (!ticket.dueDate) return false;
     const dueDate = new Date(ticket.dueDate);
     const now = new Date();
     return dueDate < now && ticket.status !== "resolved";
   });
 
-  const premiumTickets = supportTickets.filter(ticket => ticket.premium);
+  const premiumTickets = allTickets.filter(ticket => ticket.premium);
 
   const showHighPriorityTickets = () => {
     setSelectedTickets(highPriorityTickets);
@@ -249,7 +303,7 @@ export default function Support() {
             <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center mx-auto mb-3 text-white shadow-lg">
               <AlertTriangle className="h-6 w-6" />
             </div>
-            <p className="text-2xl font-bold text-dark-blue">{supportTickets.filter(t => t.status !== "resolved").length}</p>
+            <p className="text-2xl font-bold text-dark-blue">{allTickets.filter(t => t.status !== "resolved").length}</p>
             <p className="text-sm text-gray-600">Open Tickets</p>
             <div className="mt-2">
               <Badge className="bg-red-100 text-red-800 text-xs">
@@ -366,7 +420,7 @@ export default function Support() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {supportTickets.slice(0, 3).map((ticket) => (
+            {[...allTickets].sort((a,b) => new Date(b.created) - new Date(a.created)).slice(0, 3).map((ticket) => (
               <div key={ticket.id} className="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 border border-blue-100">
                 <div className="flex-shrink-0">
                   <Badge className={`${getPriorityColor(ticket.priority)} text-xs`}>
@@ -641,7 +695,7 @@ export default function Support() {
             {/* Overall Stats */}
             <div className="grid grid-cols-4 gap-4">
               <Card className="p-4 text-center">
-                <h3 className="text-2xl font-bold text-dark-blue">{supportTickets.length}</h3>
+                <h3 className="text-2xl font-bold text-dark-blue">{allTickets.length}</h3>
                 <p className="text-sm text-gray-600">Total Tickets</p>
               </Card>
               <Card className="p-4 text-center">
