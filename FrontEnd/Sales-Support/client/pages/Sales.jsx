@@ -819,7 +819,7 @@ export default function Sales() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
                       <h4 className="font-semibold text-gray-800">{lead.name}</h4>
-                      <Badge className={getStatusColor(lead.status)}>{lead.status}</Badge>
+                      <Badge className={getStatusColor(getStatusFromStage(lead.stage))}>{getStatusFromStage(lead.stage)}</Badge>
                       <Badge className={getStageColor(lead.stage)}>{lead.stage}</Badge>
                     </div>
 
