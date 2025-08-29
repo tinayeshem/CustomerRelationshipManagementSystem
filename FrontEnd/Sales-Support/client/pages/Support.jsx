@@ -791,6 +791,9 @@ export default function Support() {
                   ticketType: newTicket.category,
                   isTicket: true,
                   priority: mapPriority(newTicket.priority),
+                  activityLog: [
+                    { user: Array.isArray(newTicket.assignees) ? newTicket.assignees.join(', ') : '', action: 'Created', timestamp: new Date().toLocaleString() }
+                  ],
                 };
                 const updated = [activity, ...list];
                 localStorage.setItem('activitiesList', JSON.stringify(updated));
