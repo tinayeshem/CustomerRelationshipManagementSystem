@@ -165,6 +165,8 @@ export default function Support() {
   const [isOverdueDialogOpen, setIsOverdueDialogOpen] = useState(false);
   const [isPremiumDialogOpen, setIsPremiumDialogOpen] = useState(false);
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
+  const [isTicketViewOpen, setIsTicketViewOpen] = useState(false);
+  const [selectedTicketActivity, setSelectedTicketActivity] = useState(null);
   const [newTicket, setNewTicket] = useState({
     title: "",
     client: "",
@@ -596,10 +598,7 @@ export default function Support() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        try { localStorage.setItem('openActivityId', String(activity.id)); } catch {}
-                        window.location.href = '/activities';
-                      }}
+                      onClick={() => { setSelectedTicketActivity(activity); setIsTicketViewOpen(true); }}
                       className="border-blue-200 text-blue-600 hover:bg-blue-50"
                     >
                       <Eye className="h-3 w-3 mr-1" />
@@ -695,6 +694,95 @@ export default function Support() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Ticket Details Dialog (from Tickets List) */}
+      <Dialog open={isTicketViewOpen} onOpenChange={setIsTicketViewOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <span>Ticket Details</span>
+            </DialogTitle>
+            <DialogDescription>
+              Full details for the selected support ticket
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTicketActivity && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <Badge variant="outline">{selectedTicketActivity.status}</Badge>
+                  <p className="text-xs text-gray-600 mt-1">Status</p>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <Badge className={getPriorityColor((selectedTicketActivity.priority || '').toLowerCase())}>
+                    {selectedTicketActivity.priority}
+                  </Badge>
+                  <p className="text-xs text-gray-600 mt-1">Priority</p>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <Badge variant="outline">{selectedTicketActivity.ticketType || 'Ticket'}</Badge>
+                  <p className="text-xs text-gray-600 mt-1">Category</p>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  {selectedTicketActivity.premiumSupport ? (
+                    <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Premium</Badge>
+                  ) : (
+                    <Badge variant="outline">Standard</Badge>
+                  )}
+                  <p className="text-xs text-gray-600 mt-1">Support Level</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-blue-800">Ticket Information</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Client</p>
+                      <p className="text-sm text-gray-600">{selectedTicketActivity.linkedClient}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Date & Time</p>
+                      <p className="text-sm text-gray-600">{selectedTicketActivity.date} at {selectedTicketActivity.time}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Responsible</p>
+                      <p className="text-sm text-gray-600">{Array.isArray(selectedTicketActivity.responsible) ? selectedTicketActivity.responsible.join(', ') : selectedTicketActivity.responsible}</p>
+                    </div>
+                    {selectedTicketActivity.deadline && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Deadline</p>
+                        <p className="text-sm text-gray-600">{selectedTicketActivity.deadline}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-blue-800">Details</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Title/Notes</p>
+                      <p className="text-sm text-gray-600">{selectedTicketActivity.notes}</p>
+                    </div>
+                    {Array.isArray(selectedTicketActivity.attachments) && selectedTicketActivity.attachments.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Attachments</p>
+                        <div className="space-y-1 text-sm text-gray-600">
+                          {selectedTicketActivity.attachments.map((f, i) => (<div key={i}>{f}</div>))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTicketViewOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* High Priority Tickets Dialog */}
       <Dialog open={isHighPriorityDialogOpen} onOpenChange={setIsHighPriorityDialogOpen}>
