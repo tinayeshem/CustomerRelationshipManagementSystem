@@ -1008,7 +1008,7 @@ export default function Sales() {
           {selectedLead && (
             <div className="space-y-6">
               {/* Top badges */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="p-3 rounded-lg border">
                   <p className="text-xs text-gray-500">Status</p>
                   <div className="mt-1"><Badge className={getStatusColor(getStatusFromStage(selectedLead.stage))}>{getStatusFromStage(selectedLead.stage)}</Badge></div>
