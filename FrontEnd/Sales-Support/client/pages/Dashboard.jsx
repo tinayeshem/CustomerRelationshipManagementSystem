@@ -237,7 +237,7 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center space-x-2">
                 <Activity className="h-5 w-5" />
-                <span>Team Recent Activities</span>
+                <span>Team Recent Ticket</span>
               </CardTitle>
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/activities">
