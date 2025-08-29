@@ -407,7 +407,6 @@ export default function Sales() {
     name: "",
     contacts: [{ name: "", role: "Primary", phone: "", email: "" }],
     value: "",
-    probability: 50,
     stage: STAGES[0],
     source: "",
     region: "",
@@ -436,7 +435,6 @@ export default function Sales() {
       phone: newLead.contacts[0]?.phone || "",
       email: newLead.contacts[0]?.email || "",
       value: parseFloat(newLead.value) || 0,
-      probability: newLead.probability,
       stage: newLead.stage,
       source: newLead.source,
       region: newLead.region,
@@ -456,7 +454,6 @@ export default function Sales() {
       name: "",
       contacts: [{ name: "", role: "Primary", phone: "", email: "" }],
       value: "",
-      probability: 50,
       stage: STAGES[0],
       source: "",
       region: "",
@@ -566,16 +563,11 @@ export default function Sales() {
                   onChange={(c) => handleNewChange("contacts", c)}
                 />
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Deal Value (€) *</Label>
                     <Input type="number" placeholder="50000"
                       value={newLead.value} onChange={(e) => handleNewChange("value", e.target.value)} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Probability (%)</Label>
-                    <Input type="number" min="0" max="100"
-                      value={newLead.probability} onChange={(e) => handleNewChange("probability", parseInt(e.target.value || "0", 10))} />
                   </div>
                   <div className="space-y-2">
                     <Label>Next Action Date</Label>
@@ -939,14 +931,10 @@ export default function Sales() {
                 onChange={(c) => setEditLead((p) => ({ ...p, contacts: c, contact: c?.[0]?.name || p.contact }))}
               />
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Deal Value (€)</Label>
                   <Input type="number" value={editLead.value} onChange={(e) => setEditLead((p) => ({ ...p, value: parseFloat(e.target.value || '0') }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Probability (%)</Label>
-                  <Input type="number" min="0" max="100" value={editLead.probability} onChange={(e) => setEditLead((p) => ({ ...p, probability: parseInt(e.target.value || '0', 10) }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>Next Action Date</Label>
