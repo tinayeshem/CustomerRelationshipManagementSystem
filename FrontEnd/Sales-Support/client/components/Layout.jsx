@@ -117,6 +117,7 @@ export default function Layout({ children }) {
               .filter((item) => {
                 if (!user) return true;
                 if (user.department === 'Support' && item.name === 'Sales') return false;
+                if (user.department === 'Support' && item.name === 'Activities') return false;
                 if (user.department === 'Sales' && item.name === 'Support') return false;
                 return true;
               })
