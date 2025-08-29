@@ -167,8 +167,8 @@ export default function Support() {
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const [isTicketViewOpen, setIsTicketViewOpen] = useState(false);
   const [selectedTicketActivity, setSelectedTicketActivity] = useState(null);
-  const [editingDueId, setEditingDueId] = useState(null);
-  const [editingDueDate, setEditingDueDate] = useState("");
+  const [isEditingTicket, setIsEditingTicket] = useState(false);
+  const [editingActivityId, setEditingActivityId] = useState(null);
   const [newTicket, setNewTicket] = useState({
     title: "",
     client: "",
@@ -311,7 +311,12 @@ export default function Support() {
           </a>
         </div>
         <Button
-          onClick={() => setIsRegisterDialogOpen(true)}
+          onClick={() => {
+            setIsEditingTicket(false);
+            setEditingActivityId(null);
+            setNewTicket({ title: "", client: "", priority: "medium", category: "Bug", assignees: [], description: "", premium: false, dueDate: "" });
+            setIsRegisterDialogOpen(true);
+          }}
           className="bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -607,50 +612,27 @@ export default function Support() {
                       <Eye className="h-3 w-3 mr-1" />
                       View
                     </Button>
-                    {editingDueId === activity.id ? (
-                      <>
-                        <Input
-                          type="date"
-                          value={editingDueDate}
-                          onChange={(e) => setEditingDueDate(e.target.value)}
-                          className="h-8"
-                        />
-                        <Button
-                          size="sm"
-                          className="bg-blue-600 hover:bg-blue-700 text-white"
-                          onClick={() => {
-                            try {
-                              const saved = localStorage.getItem('activitiesList');
-                              const list = saved ? JSON.parse(saved) : [];
-                              const updated = Array.isArray(list) ? list.map(a => a.id === activity.id ? { ...a, deadline: editingDueDate } : a) : [];
-                              localStorage.setItem('activitiesList', JSON.stringify(updated));
-                              window.dispatchEvent(new Event('activitiesListUpdated'));
-                              setEditingDueId(null);
-                              setEditingDueDate("");
-                            } catch (e) {
-                              console.error('Failed to update due date', e);
-                            }
-                          }}
-                        >
-                          Save
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => { setEditingDueId(null); setEditingDueDate(""); }}
-                        >
-                          Cancel
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => { setEditingDueId(activity.id); setEditingDueDate(activity.deadline || ""); }}
-                      >
-                        Edit Due
-                      </Button>
-                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditingTicket(true);
+                        setEditingActivityId(activity.id);
+                        setNewTicket({
+                          title: activity.notes || "",
+                          client: activity.linkedClient || "",
+                          priority: ((activity.priority || "Medium").toString().toLowerCase()),
+                          category: activity.ticketType || "Bug",
+                          assignees: Array.isArray(activity.responsible) ? activity.responsible : (activity.responsible ? [activity.responsible] : []),
+                          description: activity.notes || "",
+                          premium: !!activity.premiumSupport,
+                          dueDate: activity.deadline || ""
+                        });
+                        setIsRegisterDialogOpen(true);
+                      }}
+                    >
+                      Edit
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -1031,9 +1013,9 @@ export default function Support() {
       <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
         <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Register Support Ticket</DialogTitle>
+            <DialogTitle>{isEditingTicket ? "Edit Support Ticket" : "Register Support Ticket"}</DialogTitle>
             <DialogDescription>
-              Create a new support ticket. It will also appear in Activities.
+              {isEditingTicket ? "Update the support ticket. Changes will also appear in Activities." : "Create a new support ticket. It will also appear in Activities."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
@@ -1122,7 +1104,7 @@ export default function Support() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsRegisterDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => { setIsRegisterDialogOpen(false); setIsEditingTicket(false); setEditingActivityId(null); setNewTicket({ title: "", client: "", priority: "medium", category: "Bug", assignees: [], description: "", premium: false, dueDate: "" }); }}>Cancel</Button>
             <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
               if (!newTicket.title || !newTicket.client || !Array.isArray(newTicket.assignees) || newTicket.assignees.length === 0) {
                 alert("Please fill in title, client and at least one assignee");
@@ -1131,44 +1113,64 @@ export default function Support() {
               try {
                 const saved = localStorage.getItem('activitiesList');
                 const list = saved ? JSON.parse(saved) : [];
-                const now = new Date();
                 const mapPriority = (p) => p === 'urgent' ? 'Urgent' : p === 'high' ? 'High' : p === 'low' ? 'Low' : 'Medium';
-                const activity = {
-                  id: (list?.[0]?.id || 0) + list.length + 1,
-                  activityType: 'Email',
-                  category: 'Support',
-                  linkedClient: newTicket.client,
-                  unitType: 'Government',
-                  date: now.toISOString().split('T')[0],
-                  time: now.toTimeString().slice(0,5),
-                  responsible: newTicket.assignees,
-                  status: 'To Do',
-                  deadline: newTicket.dueDate || '',
-                  reminderDate: '',
-                  nextStep: '',
-                  nextStepDate: '',
-                  notes: newTicket.description || newTicket.title,
-                  attachments: [],
-                  costPerActivity: 0,
-                  premiumSupport: !!newTicket.premium,
-                  ticketType: newTicket.category,
-                  isTicket: true,
-                  priority: mapPriority(newTicket.priority),
-                  activityLog: [
-                    { user: Array.isArray(newTicket.assignees) ? newTicket.assignees.join(', ') : '', action: 'Created', timestamp: new Date().toLocaleString() }
-                  ],
-                };
-                const updated = [activity, ...list];
-                localStorage.setItem('activitiesList', JSON.stringify(updated));
-                window.dispatchEvent(new Event('activitiesListUpdated'));
-                setIsRegisterDialogOpen(false);
-                setNewTicket({ title: '', client: '', priority: 'medium', category: 'Bug', assignees: [], description: '', premium: false });
-                alert('Ticket registered successfully');
+                if (isEditingTicket && editingActivityId != null) {
+                  const updated = Array.isArray(list) ? list.map(a => a.id === editingActivityId ? {
+                    ...a,
+                    linkedClient: newTicket.client,
+                    responsible: newTicket.assignees,
+                    priority: mapPriority(newTicket.priority),
+                    ticketType: newTicket.category,
+                    notes: newTicket.description || newTicket.title,
+                    premiumSupport: !!newTicket.premium,
+                    deadline: newTicket.dueDate || ''
+                  } : a) : [];
+                  localStorage.setItem('activitiesList', JSON.stringify(updated));
+                  window.dispatchEvent(new Event('activitiesListUpdated'));
+                  setIsRegisterDialogOpen(false);
+                  setIsEditingTicket(false);
+                  setEditingActivityId(null);
+                  setNewTicket({ title: "", client: "", priority: "medium", category: "Bug", assignees: [], description: "", premium: false, dueDate: "" });
+                  alert('Ticket updated successfully');
+                } else {
+                  const now = new Date();
+                  const activity = {
+                    id: (list?.[0]?.id || 0) + list.length + 1,
+                    activityType: 'Email',
+                    category: 'Support',
+                    linkedClient: newTicket.client,
+                    unitType: 'Government',
+                    date: now.toISOString().split('T')[0],
+                    time: now.toTimeString().slice(0,5),
+                    responsible: newTicket.assignees,
+                    status: 'To Do',
+                    deadline: newTicket.dueDate || '',
+                    reminderDate: '',
+                    nextStep: '',
+                    nextStepDate: '',
+                    notes: newTicket.description || newTicket.title,
+                    attachments: [],
+                    costPerActivity: 0,
+                    premiumSupport: !!newTicket.premium,
+                    ticketType: newTicket.category,
+                    isTicket: true,
+                    priority: mapPriority(newTicket.priority),
+                    activityLog: [
+                      { user: Array.isArray(newTicket.assignees) ? newTicket.assignees.join(', ') : '', action: 'Created', timestamp: new Date().toLocaleString() }
+                    ],
+                  };
+                  const updated = [activity, ...list];
+                  localStorage.setItem('activitiesList', JSON.stringify(updated));
+                  window.dispatchEvent(new Event('activitiesListUpdated'));
+                  setIsRegisterDialogOpen(false);
+                  setNewTicket({ title: "", client: "", priority: "medium", category: "Bug", assignees: [], description: "", premium: false, dueDate: "" });
+                  alert('Ticket registered successfully');
+                }
               } catch (e) {
-                console.error('Failed to register ticket', e);
-                alert('Failed to register ticket');
+                console.error('Failed to save ticket', e);
+                alert('Failed to save ticket');
               }
-            }}>Register Ticket</Button>
+            }}>{isEditingTicket ? "Save Changes" : "Register Ticket"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
