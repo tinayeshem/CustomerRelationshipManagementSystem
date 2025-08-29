@@ -388,7 +388,7 @@ export default function Activities() {
       return activitiesList.filter(a => isTicket(a) && hasSupportAssignee(a));
     }
     if (user?.department === "Sales") {
-      return activitiesList.filter(a => !isTicket(a));
+      return activitiesList.filter(a => a.category === "Sales");
     }
     return activitiesList;
   }, [activitiesList, user?.department, supportMemberNames]);
