@@ -281,7 +281,7 @@ export default function Dashboard() {
                 <span>Team Recent Ticket</span>
               </CardTitle>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/activities">
+                <Link to="/support">
                   View All <ArrowRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>
@@ -345,7 +345,7 @@ export default function Dashboard() {
                 <span>Your Upcoming Task</span>
               </CardTitle>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/activities">
+                <Link to="/support">
                   View All <ArrowRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>
@@ -399,7 +399,7 @@ export default function Dashboard() {
               asChild
               className="h-20 flex-col space-y-2 bg-gradient-to-br from-blue-100 to-blue-200 text-blue-800 hover:from-blue-200 hover:to-blue-300 border border-blue-200 shadow-md transition-all duration-300 hover:shadow-lg"
             >
-              <Link to="/activities">
+              <Link to="/support">
                 <Activity className="h-6 w-6" />
                 <span className="text-sm font-medium">New Activity</span>
               </Link>
