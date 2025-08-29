@@ -507,7 +507,7 @@ export default function Sales() {
       const text = `${l.name} ${l.region} ${l.product} ${l.assignee} ${l.contacts?.map((c) => c.name).join(" ")}`.toLowerCase();
       if (filters.search && !text.includes(filters.search.toLowerCase())) return false;
       if (filters.stage !== "All Stages" && l.stage !== filters.stage) return false;
-      if (filters.status !== "All Statuses" && l.status !== filters.status) return false;
+      if (filters.status !== "All Statuses" && getStatusFromStage(l.stage) !== filters.status) return false;
       if (filters.region !== "All Regions" && l.region !== filters.region) return false;
       if (filters.product !== "All Products" && l.product !== filters.product) return false;
       if (filters.assignee !== "All Owners" && l.assignee !== filters.assignee) return false;
