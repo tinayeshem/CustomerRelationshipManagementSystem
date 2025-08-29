@@ -562,14 +562,14 @@ export default function Projects() {
               )}
               <div className="space-y-2">
                 <p className="text-xs text-muted-foreground">Activities</p>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {Array.isArray(p.cardActivities) && p.cardActivities.length > 0 ? (
                     p.cardActivities.map((a) => (
-                      <div key={a.id} className="text-sm flex items-center justify-between p-2 rounded bg-background/50">
-                        <div>
+                      <div key={a.id} className="text-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 p-3 rounded bg-background/50">
+                        <div className="leading-tight">
                           <span className="font-medium">{a.activityType}</span> • {a.date} {a.time}
                         </div>
-                        <div className="text-xs text-muted-foreground">{Array.isArray(a.responsible) ? a.responsible.join(", ") : a.responsible}</div>
+                        <div className="text-xs text-muted-foreground sm:mt-0">{Array.isArray(a.responsible) ? a.responsible.join(", ") : a.responsible}</div>
                       </div>
                     ))
                   ) : (
