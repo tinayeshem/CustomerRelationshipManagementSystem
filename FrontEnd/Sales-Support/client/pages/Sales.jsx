@@ -987,7 +987,8 @@ export default function Sales() {
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
             <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
               if (!editLead?.name) { alert('Name is required'); return; }
-              setLeadsList((prev) => prev.map((l) => l.id === editLead.id ? { ...l, ...editLead } : l));
+              const coercedStatus = getStatusFromStage(editLead.stage);
+              setLeadsList((prev) => prev.map((l) => l.id === editLead.id ? { ...l, ...editLead, status: coercedStatus } : l));
               setIsEditOpen(false);
             }}>Save Changes</Button>
           </DialogFooter>
