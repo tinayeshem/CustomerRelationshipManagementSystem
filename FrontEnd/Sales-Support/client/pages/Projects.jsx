@@ -148,6 +148,7 @@ export default function Projects() {
   const saveProjects = (list) => {
     setProjects(list);
     localStorage.setItem("projectsData", JSON.stringify(list));
+    window.dispatchEvent(new Event("projectsDataUpdated"));
   };
   const saveActivities = (list) => {
     setActivities(list);
@@ -313,6 +314,17 @@ export default function Projects() {
 
   // Add Next Activity Dialog per project
   const [addActivityFor, setAddActivityFor] = useState(null); // project or null
+
+  // Edit Project dialog state
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    goal: "",
+    notes: "",
+    assignedMembers: [],
+    currentStage: PHASES[0]
+  });
   const [activityForm, setActivityForm] = useState({
     activityType: "Call",
     date: new Date().toISOString().split('T')[0],
@@ -329,6 +341,13 @@ export default function Projects() {
     const fromOrg = Array.isArray(org?.responsibleMembers) ? org.responsibleMembers : [];
     return Array.from(new Set([...fromOrg, ...DEFAULT_TEAM_MEMBERS]));
   }, [addActivityFor, organizations]);
+
+  const editAvailableMembers = useMemo(() => {
+    if (!editingProject) return [];
+    const org = organizations.find(o => String(o.id) === String(editingProject.organizationId));
+    const fromOrg = Array.isArray(org?.responsibleMembers) ? org.responsibleMembers : [];
+    return Array.from(new Set([...fromOrg, ...DEFAULT_TEAM_MEMBERS]));
+  }, [editingProject, organizations]);
 
   const handleAddActivityToProject = () => {
     if (!addActivityFor) return;
@@ -542,6 +561,19 @@ export default function Projects() {
                   <Button size="sm" variant="outline" className="border-green-200 text-green-700 hover:bg-green-50" onClick={() => setAddActivityFor(p)}>
                     Add Activity
                   </Button>
+                  <Button size="sm" variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50" onClick={() => {
+                    setEditingProject(p);
+                    setEditForm({
+                      name: p.name || "",
+                      goal: p.goal || "",
+                      notes: p.notes || "",
+                      assignedMembers: Array.isArray(p.assignedMembers) ? p.assignedMembers : [],
+                      currentStage: PHASES.includes(p.currentStage) ? p.currentStage : PHASES[0]
+                    });
+                    setIsEditOpen(true);
+                  }}>
+                    Edit
+                  </Button>
                   <Button size="sm" variant="outline" className="border-purple-200 text-purple-700 hover:bg-purple-50" onClick={() => loadAuditTrail(p.id)}>
                     <History className="h-3 w-3 mr-1" />
                     History
@@ -588,6 +620,90 @@ export default function Projects() {
           </Card>
         ))}
       </div>
+
+      {/* Edit Project Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={(open) => { if (!open) { setIsEditOpen(false); setEditingProject(null); } }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Project</DialogTitle>
+            <DialogDescription>Update project details and assigned members</DialogDescription>
+          </DialogHeader>
+          {editingProject && (
+            <div className="grid gap-4 py-2">
+              <div className="space-y-2">
+                <Label>Project Name *</Label>
+                <Input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Organization</Label>
+                <Input value={editingProject.organizationName || ""} disabled />
+              </div>
+              <div className="space-y-2">
+                <Label>Goal</Label>
+                <Textarea rows={2} value={editForm.goal} onChange={(e) => setEditForm({ ...editForm, goal: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea rows={3} value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Current Stage</Label>
+                  <Select value={editForm.currentStage} onValueChange={(v) => setEditForm({ ...editForm, currentStage: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PHASES.map(s => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Assigned Members</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {editAvailableMembers.map((m) => (
+                      <label key={m} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                          checked={editForm.assignedMembers.includes(m)}
+                          onChange={(e) => {
+                            const cur = editForm.assignedMembers;
+                            const next = e.target.checked ? [...cur, m] : cur.filter(x => x !== m);
+                            setEditForm({ ...editForm, assignedMembers: next });
+                          }}
+                        />
+                        {m}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsEditOpen(false); setEditingProject(null); }}>Cancel</Button>
+            <Button className="bg-dark-blue hover:bg-dark-blue-hover text-white" onClick={() => {
+              if (!editingProject || !editForm.name) { alert('Project name is required'); return; }
+              try {
+                const stageOrder = PHASES;
+                const toIdx = stageOrder.indexOf(editForm.currentStage);
+                const updated = projects.map(p => {
+                  if (p.id !== editingProject.id) return p;
+                  const newStages = p.stages.map((s, i) => ({ ...s, completed: i <= toIdx }));
+                  return { ...p, name: editForm.name, goal: editForm.goal, notes: editForm.notes, assignedMembers: editForm.assignedMembers, currentStage: editForm.currentStage, stages: newStages };
+                });
+                saveProjects(updated);
+                setIsEditOpen(false);
+                setEditingProject(null);
+              } catch (e) {
+                console.error('Failed to update project', e);
+                alert('Failed to update project');
+              }
+            }}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Activity to Project Dialog */}
       <Dialog open={!!addActivityFor} onOpenChange={(open) => { if (!open) setAddActivityFor(null); }}>
