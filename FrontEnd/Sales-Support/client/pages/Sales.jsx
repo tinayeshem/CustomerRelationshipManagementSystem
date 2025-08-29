@@ -146,6 +146,12 @@ const getStatusColor = (status) => {
     default: return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
+const getStatusFromStage = (stage) => {
+  if (stage === "Contract Signed" || stage === "Implementation") return "Hot";
+  if (stage === "First Contacted") return "Cold";
+  if (stage === "Interested" || stage === "Offer Sent" || stage === "Accepted") return "Warm";
+  return "Cold";
+};
 const getStageColor = (stage) => {
   switch (stage) {
     case "First Contacted": return "bg-blue-100 text-blue-800 border-blue-200";
