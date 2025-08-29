@@ -164,7 +164,6 @@ export default function Support() {
   const [isHighPriorityDialogOpen, setIsHighPriorityDialogOpen] = useState(false);
   const [isOverdueDialogOpen, setIsOverdueDialogOpen] = useState(false);
   const [isPremiumDialogOpen, setIsPremiumDialogOpen] = useState(false);
-  const [isPerformanceDialogOpen, setIsPerformanceDialogOpen] = useState(false);
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const [newTicket, setNewTicket] = useState({
     title: "",
@@ -260,9 +259,6 @@ export default function Support() {
     setIsPremiumDialogOpen(true);
   };
 
-  const showPerformanceReport = () => {
-    setIsPerformanceDialogOpen(true);
-  };
 
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
@@ -394,14 +390,6 @@ export default function Support() {
               <Badge className="bg-blue-700 text-white">{premiumTickets.length}</Badge>
             </Button>
 
-            <Button
-              onClick={showPerformanceReport}
-              className="h-20 flex-col space-y-2 bg-gradient-to-br from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700"
-            >
-              <BarChart3 className="h-6 w-6" />
-              <span className="text-sm">Performance Report</span>
-              <Badge className="bg-green-700 text-white">Live</Badge>
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -679,91 +667,6 @@ export default function Support() {
         </DialogContent>
       </Dialog>
 
-      {/* Performance Report Dialog */}
-      <Dialog open={isPerformanceDialogOpen} onOpenChange={setIsPerformanceDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <BarChart3 className="h-5 w-5 text-green-600" />
-              <span>Team Performance Report</span>
-            </DialogTitle>
-            <DialogDescription>
-              Comprehensive performance metrics and team statistics
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-6">
-            {/* Overall Stats */}
-            <div className="grid grid-cols-4 gap-4">
-              <Card className="p-4 text-center">
-                <h3 className="text-2xl font-bold text-dark-blue">{allTickets.length}</h3>
-                <p className="text-sm text-gray-600">Total Tickets</p>
-              </Card>
-              <Card className="p-4 text-center">
-                <h3 className="text-2xl font-bold text-green-600">87%</h3>
-                <p className="text-sm text-gray-600">On-Time Resolution</p>
-              </Card>
-              <Card className="p-4 text-center">
-                <h3 className="text-2xl font-bold text-blue-600">2.4h</h3>
-                <p className="text-sm text-gray-600">Avg Response Time</p>
-              </Card>
-              <Card className="p-4 text-center">
-                <h3 className="text-2xl font-bold text-yellow-600">4.7/5</h3>
-                <p className="text-sm text-gray-600">Customer Rating</p>
-              </Card>
-            </div>
-
-            {/* Team Details */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 text-dark-blue">Individual Performance</h3>
-              <div className="space-y-4">
-                {teamMembers.map((member, idx) => (
-                  <Card key={idx} className="p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className="font-semibold text-gray-800">{member.name}</h4>
-                        <p className="text-sm text-gray-600">{member.role}</p>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-dark-blue">{member.activeTickets}</p>
-                          <p className="text-xs text-gray-600">Active</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-green-600">{member.resolvedToday}</p>
-                          <p className="text-xs text-gray-600">Resolved Today</p>
-                        </div>
-                        <div className="text-center">
-                          <div className="flex items-center space-x-1">
-                            <Star className="h-4 w-4 text-yellow-500" />
-                            <span className="text-lg font-bold">{member.rating}</span>
-                          </div>
-                          <p className="text-xs text-gray-600">Rating</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Bonus Progress ({member.bonusProgress}%)</span>
-                        <span className="text-gray-800">{member.bonusProgress >= 80 ? "On Track" : "Behind"}</span>
-                      </div>
-                      <Progress value={member.bonusProgress} className="h-3" />
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPerformanceDialogOpen(false)}>
-              Close
-            </Button>
-            <Button className="bg-green-600 hover:bg-green-700 text-white">
-              <Download className="h-4 w-4 mr-2" />
-              Export Report
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Register Ticket Dialog */}
       <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
