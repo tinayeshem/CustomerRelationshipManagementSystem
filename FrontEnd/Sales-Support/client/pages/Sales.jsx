@@ -426,7 +426,7 @@ export default function Sales() {
     }
     const id = `LEAD-${String(leadsList.length + 1).padStart(3, "0")}`;
     const today = new Date().toISOString().split("T")[0];
-    const status = newLead.probability >= 70 ? "Hot" : newLead.probability >= 40 ? "Warm" : "Cold";
+    const status = getStatusFromStage(newLead.stage);
 
     const lead = {
       id,
