@@ -616,7 +616,7 @@ export default function Support() {
       {/* Recent Tickets and Team Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Tickets */}
-        <Card className="border border-blue-200 bg-white shadow-lg">
+        <Card className="hidden">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="text-dark-blue">Recent Tickets</span>
