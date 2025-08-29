@@ -992,6 +992,9 @@ export default function Activities() {
                     ticketType: newTicket.category,
                     isTicket: true,
                     priority: mapPriority(newTicket.priority),
+                    activityLog: [
+                      { user: Array.isArray(newTicket.assignees) ? newTicket.assignees.join(', ') : '', action: 'Created', timestamp: new Date().toLocaleString() }
+                    ],
                   };
                   const updated = [activity, ...list];
                   localStorage.setItem('activitiesList', JSON.stringify(updated));
@@ -1454,7 +1457,7 @@ export default function Activities() {
               <div>
                 <h3 className="text-lg font-semibold mb-4 text-blue-800">Activity Log</h3>
                 <div className="space-y-2">
-                  {selectedActivity.activityLog.map((log, idx) => (
+                  {(selectedActivity.activityLog || []).map((log, idx) => (
                     <div key={idx} className="flex items-center space-x-2 p-2 bg-gray-50 rounded text-sm">
                       <User className="h-3 w-3 text-gray-600" />
                       <span className="font-medium">{log.user}</span>
