@@ -302,7 +302,7 @@ export default function Dashboard() {
                     <div className="flex-1">
                       <p className="font-medium text-sm">{activity.client}</p>
                       <p className="text-xs text-muted-foreground">
-                        {activity.type} • {activity.time}
+                        {(activity.originalActivity?.ticketType || 'Ticket')} • {activity.time}
                       </p>
                       <p className="text-xs text-blue-600 font-medium">
                         by {activity.responsiblePerson}
