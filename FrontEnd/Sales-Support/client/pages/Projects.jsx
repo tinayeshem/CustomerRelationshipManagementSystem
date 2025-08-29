@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useState, useEffect, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -387,7 +388,10 @@ export default function Projects() {
     setActivityForm({ activityType: "Call", date: new Date().toISOString().split('T')[0], time: new Date().toTimeString().slice(0,5), responsible: [], notes: "", status: "To Do", priority: "Medium" });
   };
 
-  const projectsForUI = useMemo(() => projects, [projects]);
+  const projectsForUI = useMemo(() => {
+    if (!user?.name) return projects;
+    return projects.filter(p => Array.isArray(p.assignedMembers) && p.assignedMembers.includes(user.name));
+  }, [projects, user?.name]);
 
   // Load audit trail for a specific project
   const loadAuditTrail = async (projectId) => {
