@@ -167,6 +167,8 @@ export default function Support() {
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const [isTicketViewOpen, setIsTicketViewOpen] = useState(false);
   const [selectedTicketActivity, setSelectedTicketActivity] = useState(null);
+  const [editingDueId, setEditingDueId] = useState(null);
+  const [editingDueDate, setEditingDueDate] = useState("");
   const [newTicket, setNewTicket] = useState({
     title: "",
     client: "",
@@ -175,6 +177,7 @@ export default function Support() {
     assignees: [],
     description: "",
     premium: false,
+    dueDate: "",
   });
 
   const storedOrgs = typeof window !== "undefined" ? localStorage.getItem("organizationData") : null;
@@ -594,7 +597,7 @@ export default function Support() {
                   <Badge className={getPriorityColor((activity.priority || '').toLowerCase())}>
                     {activity.priority}
                   </Badge>
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 items-center">
                     <Button
                       variant="outline"
                       size="sm"
@@ -604,6 +607,50 @@ export default function Support() {
                       <Eye className="h-3 w-3 mr-1" />
                       View
                     </Button>
+                    {editingDueId === activity.id ? (
+                      <>
+                        <Input
+                          type="date"
+                          value={editingDueDate}
+                          onChange={(e) => setEditingDueDate(e.target.value)}
+                          className="h-8"
+                        />
+                        <Button
+                          size="sm"
+                          className="bg-blue-600 hover:bg-blue-700 text-white"
+                          onClick={() => {
+                            try {
+                              const saved = localStorage.getItem('activitiesList');
+                              const list = saved ? JSON.parse(saved) : [];
+                              const updated = Array.isArray(list) ? list.map(a => a.id === activity.id ? { ...a, deadline: editingDueDate } : a) : [];
+                              localStorage.setItem('activitiesList', JSON.stringify(updated));
+                              window.dispatchEvent(new Event('activitiesListUpdated'));
+                              setEditingDueId(null);
+                              setEditingDueDate("");
+                            } catch (e) {
+                              console.error('Failed to update due date', e);
+                            }
+                          }}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { setEditingDueId(null); setEditingDueDate(""); }}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setEditingDueId(activity.id); setEditingDueDate(activity.deadline || ""); }}
+                      >
+                        Edit Due
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1062,6 +1109,10 @@ export default function Support() {
               </div>
             </div>
             <div className="space-y-2">
+              <Label htmlFor="ticket-dueDate">Due Date</Label>
+              <Input id="ticket-dueDate" type="date" value={newTicket.dueDate} onChange={(e) => setNewTicket(v => ({...v, dueDate: e.target.value}))} />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="ticket-description">Description</Label>
               <Textarea id="ticket-description" rows={4} value={newTicket.description} onChange={(e) => setNewTicket(v => ({...v, description: e.target.value}))} placeholder="Describe the issue..." />
             </div>
@@ -1092,7 +1143,7 @@ export default function Support() {
                   time: now.toTimeString().slice(0,5),
                   responsible: newTicket.assignees,
                   status: 'To Do',
-                  deadline: '',
+                  deadline: newTicket.dueDate || '',
                   reminderDate: '',
                   nextStep: '',
                   nextStepDate: '',
