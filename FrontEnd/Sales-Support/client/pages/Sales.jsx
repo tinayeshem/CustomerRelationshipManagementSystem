@@ -1,5 +1,5 @@
 // Sales.jsx
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { TEAM_MEMBER_NAMES } from "@/constants/teamMembers";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
