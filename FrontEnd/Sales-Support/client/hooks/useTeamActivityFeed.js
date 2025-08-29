@@ -69,10 +69,23 @@ const getResponsiblePerson = (activity) => {
   if (typeof responsible === 'string') {
     return responsible;
   }
-  
+
   // Fallback: check activityLog
   const createdEntry = (activity.activityLog || []).find(log => log.action === 'Created');
   return createdEntry ? createdEntry.user : 'Unknown';
+};
+
+// Get all actor names involved in an activity (for filtering)
+const getActorNames = (activity) => {
+  const responsible = activity.responsible;
+  if (Array.isArray(responsible)) {
+    return responsible.filter(Boolean);
+  }
+  if (typeof responsible === 'string') {
+    return [responsible];
+  }
+  const createdEntry = (activity.activityLog || []).find(log => log.action === 'Created');
+  return createdEntry && createdEntry.user ? [createdEntry.user] : [];
 };
 
 export const useTeamActivityFeed = (limit = 3) => {
@@ -151,10 +164,18 @@ export const useTeamActivityFeed = (limit = 3) => {
       return isLinkedByProjectId || isLinkedByOrgName;
     });
 
-    // Step 4: Exclude activities created by current user
-    const teamMemberActivities = activitiesForUserProjects.filter(activity => 
-      !isActivityByCurrentUser(activity, currentUserName)
+    // Step 4: Exclude activities by current user and include only those by teammates assigned on these projects
+    const allowedTeamMembers = new Set(
+      userProjects
+        .flatMap(p => Array.isArray(p.assignedMembers) ? p.assignedMembers : [])
+        .filter(n => n && n !== currentUserName)
     );
+
+    const teamMemberActivities = activitiesForUserProjects.filter(activity => {
+      if (isActivityByCurrentUser(activity, currentUserName)) return false;
+      const names = getActorNames(activity);
+      return names.some(n => allowedTeamMembers.has(n));
+    });
 
     // Step 5: Transform to feed format and sort by date/time
     const feedItems = teamMemberActivities.map(activity => ({
