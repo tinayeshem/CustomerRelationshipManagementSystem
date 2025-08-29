@@ -34,6 +34,8 @@ import {
   MapPin,
   Trash2
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { TEAM_MEMBERS } from "@/constants/teamMembers";
 
 // Enhanced activities data with all requested fields
 const activities = [
@@ -148,6 +150,7 @@ const clientAddresses = {
 // Enhanced filter and reference data
 const activityTypes = ["All Types", "Call", "Email", "Online Meeting", "In-person Meeting"];
 const categories = ["All Categories", "Sales", "Support"];
+const supportTicketCategories = ["All Categories", "Bug", "Question", "Feature", "Training"];
 const statuses = ["All Statuses", "To Do", "In Progress", "Done"];
 const teamMembers = ["All Members", "Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
 const priorities = ["All Priorities", "Low", "Medium", "High", "Urgent"];
@@ -233,6 +236,24 @@ export default function Activities() {
     return activities;
   });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newTicket, setNewTicket] = useState({
+    title: "",
+    client: "",
+    priority: "medium",
+    category: "Bug",
+    assignees: [],
+    description: "",
+    premium: false,
+  });
+  const getSupportPriorityColor = (p) => {
+    switch (p) {
+      case "urgent": return "bg-red-100 text-red-800 border-red-200";
+      case "high": return "bg-orange-100 text-orange-800 border-orange-200";
+      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "low": return "bg-green-100 text-green-800 border-green-200";
+      default: return "";
+    }
+  };
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);
@@ -247,6 +268,7 @@ export default function Activities() {
   const [selectedClient, setSelectedClient] = useState("All Clients");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [selectedPremiumClient, setSelectedPremiumClient] = useState("All");
 
 
   // Dynamic clients list based on organizations + activities
@@ -310,26 +332,83 @@ export default function Activities() {
     priority: ""
   });
 
+  const [editTicketSupport, setEditTicketSupport] = useState({ id: '', title: '', client: '', priority: 'medium', category: 'Bug', assignees: [], description: '', premium: false });
+  const { user, getAllUsers } = useAuth();
+
+  React.useEffect(() => {
+    if (user?.department === 'Support' && selectedType === "All Types") {
+      setSelectedType("All Categories");
+      setSelectedPremiumClient((prev) => prev || "All");
+    }
+    if (user?.department !== 'Support' && selectedType === "All Categories") {
+      setSelectedType("All Types");
+    }
+  }, [user?.department]);
+
   const availableMembersForNew = React.useMemo(() => {
     const org = organizationsList.find(o => o.organizationName === newActivity.linkedClient);
     const defaults = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
-    return org?.responsibleMembers?.length ? org.responsibleMembers : defaults;
-  }, [organizationsList, newActivity.linkedClient]);
+    let allUsers = [];
+    try {
+      allUsers = (getAllUsers?.() || []).map(u => u?.name).filter(Boolean);
+    } catch {}
+    const base = allUsers.length ? allUsers : defaults;
+    const orgMembers = Array.isArray(org?.responsibleMembers) ? org.responsibleMembers : [];
+    return Array.from(new Set([...(orgMembers || []), ...base]));
+  }, [organizationsList, newActivity.linkedClient, getAllUsers]);
 
   const availableMembersForEdit = React.useMemo(() => {
     const org = organizationsList.find(o => o.organizationName === editActivity.linkedClient);
     const defaults = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
-    return org?.responsibleMembers?.length ? org.responsibleMembers : defaults;
-  }, [organizationsList, editActivity.linkedClient]);
+    let allUsers = [];
+    try {
+      allUsers = (getAllUsers?.() || []).map(u => u?.name).filter(Boolean);
+    } catch {}
+    const base = allUsers.length ? allUsers : defaults;
+    const orgMembers = Array.isArray(org?.responsibleMembers) ? org.responsibleMembers : [];
+    return Array.from(new Set([...(orgMembers || []), ...base]));
+  }, [organizationsList, editActivity.linkedClient, getAllUsers]);
+
+  // Role-based base filtering
+  const supportMemberNames = React.useMemo(() => {
+    try {
+      return (getAllUsers?.() || []).filter(u => u?.department === "Support").map(u => u.name);
+    } catch {
+      return ["Petra Babić", "Sofia Antić"]; // fallback
+    }
+  }, [getAllUsers]);
+
+  const roleFilteredActivities = React.useMemo(() => {
+    const isTicket = (a) => a?.isTicket === true || !!a?.ticketType;
+    const hasSupportAssignee = (a) => {
+      const resp = Array.isArray(a.responsible) ? a.responsible : (a.responsible ? [a.responsible] : []);
+      return resp.some(r => supportMemberNames.includes(r));
+    };
+    if (user?.department === "Support") {
+      return activitiesList.filter(a => isTicket(a) && hasSupportAssignee(a));
+    }
+    if (user?.department === "Sales") {
+      return activitiesList.filter(a => !isTicket(a));
+    }
+    return activitiesList;
+  }, [activitiesList, user?.department, supportMemberNames]);
 
   // Filtered activities
-  const filteredActivities = activitiesList.filter((activity) => {
+  const filteredActivities = roleFilteredActivities.filter((activity) => {
+    const isSupport = user?.department === "Support";
     const responsibleString = Array.isArray(activity.responsible) ? activity.responsible.join(", ") : activity.responsible;
     const matchesSearch = activity.linkedClient.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          responsibleString.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          activity.notes.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = selectedType === "All Types" || activity.activityType === selectedType;
-    const matchesCategory = selectedCategory === "All Categories" || activity.category === selectedCategory;
+    const matchesType = isSupport
+      ? (selectedType === "All Categories" || activity.ticketType === selectedType)
+      : (selectedType === "All Types" || activity.activityType === selectedType);
+    const matchesCategory = isSupport
+      ? true
+      : (selectedCategory === "All Categories" || activity.category === selectedCategory);
+    const matchesPremium = isSupport
+      ? (selectedPremiumClient === "All" || activity.premiumSupport === (selectedPremiumClient === "Premium"))
+      : true;
     const matchesStatus = selectedStatus === "All Statuses" || activity.status === selectedStatus;
     const matchesMember = selectedMember === "All Members" || responsibleString.includes(selectedMember);
     const matchesPriority = selectedPriority === "All Priorities" || activity.priority === selectedPriority;
@@ -337,7 +416,7 @@ export default function Activities() {
     const matchesFromDate = !fromDate || activity.date >= fromDate;
     const matchesToDate = !toDate || activity.date <= toDate;
 
-    return matchesSearch && matchesType && matchesCategory && matchesStatus &&
+    return matchesSearch && matchesType && matchesCategory && matchesPremium && matchesStatus &&
            matchesMember && matchesPriority && matchesClient && matchesFromDate && matchesToDate;
   });
 
@@ -395,6 +474,20 @@ export default function Activities() {
     setIsViewDialogOpen(true);
   };
 
+  React.useEffect(() => {
+    try {
+      const pendingId = localStorage.getItem('openActivityId');
+      if (pendingId) {
+        const act = (activitiesList || []).find(a => String(a.id) === String(pendingId));
+        if (act) {
+          setSelectedActivity(act);
+          setIsViewDialogOpen(true);
+        }
+        localStorage.removeItem('openActivityId');
+      }
+    } catch {}
+  }, [activitiesList]);
+
   const handleOpenMaps = (clientName) => {
     const address = clientAddresses[clientName];
     if (address) {
@@ -425,8 +518,22 @@ export default function Activities() {
       attachments: activity.attachments || [],
       costPerActivity: activity.costPerActivity,
       premiumSupport: activity.premiumSupport,
-      priority: activity.priority
+      priority: activity.priority,
+      ticketType: activity.ticketType,
+      isTicket: activity.isTicket
     });
+    if (activity?.isTicket || activity?.ticketType) {
+      setEditTicketSupport({
+        id: activity.id,
+        title: activity.notes || '',
+        client: activity.linkedClient || '',
+        priority: (activity.priority || 'Medium').toLowerCase(),
+        category: activity.ticketType || 'Bug',
+        assignees: Array.isArray(activity.responsible) ? activity.responsible : (activity.responsible ? [activity.responsible] : []),
+        description: activity.notes || '',
+        premium: !!activity.premiumSupport,
+      });
+    }
     setIsEditDialogOpen(true);
   };
 
@@ -463,9 +570,44 @@ export default function Activities() {
     setIsViewDialogOpen(false); // Close view dialog too
   };
 
+  const handleUpdateSupportTicket = () => {
+    if (!editTicketSupport.title || !editTicketSupport.client || !Array.isArray(editTicketSupport.assignees) || editTicketSupport.assignees.length === 0) {
+      alert('Please fill in title, client and at least one assignee');
+      return;
+    }
+    const mapPriority = (p) => p === 'urgent' ? 'Urgent' : p === 'high' ? 'High' : p === 'low' ? 'Low' : 'Medium';
+    const updatedActivitiesList = activitiesList.map(a => {
+      if (a.id !== editActivity.id) return a;
+      return {
+        ...a,
+        linkedClient: editTicketSupport.client,
+        responsible: editTicketSupport.assignees,
+        premiumSupport: !!editTicketSupport.premium,
+        ticketType: editTicketSupport.category,
+        isTicket: true,
+        notes: editTicketSupport.description || editTicketSupport.title,
+        priority: mapPriority(editTicketSupport.priority),
+        activityLog: [
+          ...(a.activityLog || []),
+          { user: Array.isArray(editTicketSupport.assignees) ? editTicketSupport.assignees.join(', ') : '', action: 'Updated', timestamp: new Date().toLocaleString() }
+        ]
+      };
+    });
+    setActivitiesList(updatedActivitiesList);
+    localStorage.setItem('activitiesList', JSON.stringify(updatedActivitiesList));
+    window.dispatchEvent(new Event('activitiesListUpdated'));
+    setIsEditDialogOpen(false);
+    setIsViewDialogOpen(false);
+  };
+
   const resetFilters = () => {
     setSearchTerm("");
-    setSelectedType("All Types");
+    if (user?.department === 'Support') {
+      setSelectedType("All Categories");
+      setSelectedPremiumClient("All");
+    } else {
+      setSelectedType("All Types");
+    }
     setSelectedCategory("All Categories");
     setSelectedStatus("All Statuses");
     setSelectedMember("All Members");
@@ -502,10 +644,19 @@ export default function Activities() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Activities & Tickets</h1>
-          <p className="text-muted-foreground mt-1">
-            Comprehensive activity tracking and ticket management system
-          </p>
+          {user?.department === 'Support' ? (
+            <>
+              <h1 className="text-3xl font-bold text-foreground">Tickets</h1>
+              <p className="text-muted-foreground mt-1">Comprehensive Ticket Management System</p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold text-foreground">Activities</h1>
+              <p className="text-muted-foreground mt-1">
+                Comprehensive activity tracking and ticket management system
+              </p>
+            </>
+          )}
         </div>
         <Dialog open={isDialogOpen} onOpenChange={(open) => open && setIsDialogOpen(open)}>
           <div className="flex items-center gap-2">
@@ -515,18 +666,100 @@ export default function Activities() {
             <DialogTrigger asChild>
               <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                 <Plus className="h-4 w-4 mr-2" />
-                New Activity
+                {user?.department === 'Support' ? 'New Ticket' : 'New Activity'}
               </Button>
             </DialogTrigger>
           </div>
           <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => e.preventDefault()}>
             <DialogHeader>
-              <DialogTitle>Create New Activity</DialogTitle>
+              <DialogTitle>{user?.department === 'Support' ? 'Register Support Ticket' : 'Create New Activity'}</DialogTitle>
               <DialogDescription>
-                Add a comprehensive activity with full tracking capabilities
+                {user?.department === 'Support' ? 'Create a new support ticket. It will also appear in Activities.' : 'Add a comprehensive activity with full tracking capabilities'}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-6 py-4">
+            {user?.department === 'Support' && (
+              <div className="grid gap-6 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ticket-title">Title *</Label>
+                  <Input id="ticket-title" value={newTicket.title} onChange={(e) => setNewTicket(v => ({...v, title: e.target.value}))} placeholder="Short issue summary" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ticket-client">Client *</Label>
+                    <Select value={newTicket.client} onValueChange={(val) => setNewTicket(v => ({...v, client: val}))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select client" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.filter(c => c !== "All Clients").sort().map(c => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Assignees *</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {TEAM_MEMBERS.map(m => (
+                        <label key={m.name} className="flex items-center space-x-2 p-2 rounded bg-background/50">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                            checked={Array.isArray(newTicket.assignees) ? newTicket.assignees.includes(m.name) : false}
+                            onChange={(e) => {
+                              const current = Array.isArray(newTicket.assignees) ? newTicket.assignees : [];
+                              const updated = e.target.checked ? [...current, m.name] : current.filter(n => n !== m.name);
+                              setNewTicket(v => ({...v, assignees: updated}));
+                            }}
+                          />
+                          <span className="text-sm">{m.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ticket-priority">Priority</Label>
+                    <Select value={newTicket.priority} onValueChange={(val) => setNewTicket(v => ({...v, priority: val}))}>
+                      <SelectTrigger className={newTicket.priority ? getSupportPriorityColor(newTicket.priority) + " bg-opacity-20" : ""}>
+                        <SelectValue placeholder="Select priority" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="urgent" className={getSupportPriorityColor('urgent') + ' hover:opacity-90'}>Urgent</SelectItem>
+                        <SelectItem value="high" className={getSupportPriorityColor('high') + ' hover:opacity-90'}>High</SelectItem>
+                        <SelectItem value="medium" className={getSupportPriorityColor('medium') + ' hover:opacity-90'}>Medium</SelectItem>
+                        <SelectItem value="low" className={getSupportPriorityColor('low') + ' hover:opacity-90'}>Low</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ticket-category">Category</Label>
+                    <Select value={newTicket.category} onValueChange={(val) => setNewTicket(v => ({...v, category: val}))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Bug">Bug</SelectItem>
+                        <SelectItem value="Question">Question</SelectItem>
+                        <SelectItem value="Feature">Feature</SelectItem>
+                        <SelectItem value="Training">Training</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ticket-description">Description</Label>
+                  <Textarea id="ticket-description" rows={4} value={newTicket.description} onChange={(e) => setNewTicket(v => ({...v, description: e.target.value}))} placeholder="Describe the issue..." />
+                </div>
+                <div className="flex items-center space-x-2 pt-2">
+                  <input id="ticket-premium" type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded" checked={newTicket.premium} onChange={(e) => setNewTicket(v => ({...v, premium: e.target.checked}))} />
+                  <Label htmlFor="ticket-premium">Premium</Label>
+                </div>
+              </div>
+            )}
+
+            <div className={`grid gap-6 py-4 ${user?.department === 'Support' ? 'hidden' : ''}`}>
               {/* Activity Type */}
               <div className="space-y-2">
                 <Label htmlFor="activityType">Activity Type *</Label>
@@ -784,8 +1017,56 @@ export default function Activities() {
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleAddActivity} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleAddActivity} className={`bg-blue-600 hover:bg-blue-700 ${user?.department === 'Support' ? 'hidden' : ''}`}>
                 Create Activity
+              </Button>
+              <Button className={`bg-blue-600 hover:bg-blue-700 ${user?.department === 'Support' ? '' : 'hidden'}`} onClick={() => {
+                if (!newTicket.title || !newTicket.client || !Array.isArray(newTicket.assignees) || newTicket.assignees.length === 0) {
+                  alert("Please fill in title, client and at least one assignee");
+                  return;
+                }
+                try {
+                  const saved = localStorage.getItem('activitiesList');
+                  const list = saved ? JSON.parse(saved) : [];
+                  const now = new Date();
+                  const mapPriority = (p) => p === 'urgent' ? 'Urgent' : p === 'high' ? 'High' : p === 'low' ? 'Low' : 'Medium';
+                  const activity = {
+                    id: (list?.[0]?.id || 0) + list.length + 1,
+                    activityType: 'Email',
+                    category: 'Support',
+                    linkedClient: newTicket.client,
+                    unitType: 'Government',
+                    date: now.toISOString().split('T')[0],
+                    time: now.toTimeString().slice(0,5),
+                    responsible: newTicket.assignees,
+                    status: 'To Do',
+                    deadline: '',
+                    reminderDate: '',
+                    nextStep: '',
+                    nextStepDate: '',
+                    notes: newTicket.description || newTicket.title,
+                    attachments: [],
+                    costPerActivity: 0,
+                    premiumSupport: !!newTicket.premium,
+                    ticketType: newTicket.category,
+                    isTicket: true,
+                    priority: mapPriority(newTicket.priority),
+                    activityLog: [
+                      { user: Array.isArray(newTicket.assignees) ? newTicket.assignees.join(', ') : '', action: 'Created', timestamp: new Date().toLocaleString() }
+                    ],
+                  };
+                  const updated = [activity, ...list];
+                  localStorage.setItem('activitiesList', JSON.stringify(updated));
+                  window.dispatchEvent(new Event('activitiesListUpdated'));
+                  setIsDialogOpen(false);
+                  setNewTicket({ title: '', client: '', priority: 'medium', category: 'Bug', assignees: [], description: '', premium: false });
+                  alert('Ticket registered successfully');
+                } catch (e) {
+                  console.error('Failed to register ticket', e);
+                  alert('Failed to register ticket');
+                }
+              }}>
+                Register Ticket
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -838,31 +1119,44 @@ export default function Activities() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Select value={selectedType} onValueChange={setSelectedType}>
                 <SelectTrigger className="bg-background/80">
-                  <SelectValue placeholder="Activity Type" />
+                  <SelectValue placeholder={user?.department === 'Support' ? "Category" : "Activity Type"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {activityTypes.map((type) => (
+                  {(user?.department === 'Support' ? supportTicketCategories : activityTypes).map((type) => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
 
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className={`bg-background/80 ${selectedCategory !== "All Categories" ? getCategoryColor(selectedCategory) : ""}`}>
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((category) => (
-                    <SelectItem
-                      key={category}
-                      value={category}
-                      className={category !== "All Categories" ? getCategoryColor(category) + " hover:opacity-90" : "hover:bg-gray-50"}
-                    >
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {user?.department === 'Support' ? (
+                <Select value={selectedPremiumClient} onValueChange={setSelectedPremiumClient}>
+                  <SelectTrigger className="bg-background/80">
+                    <SelectValue placeholder="Premium Clients" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["All", "Premium", "Not Premium"].map((opt) => (
+                      <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className={`bg-background/80 ${selectedCategory !== "All Categories" ? getCategoryColor(selectedCategory) : ""}`}>
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem
+                        key={category}
+                        value={category}
+                        className={category !== "All Categories" ? getCategoryColor(category) + " hover:opacity-90" : "hover:bg-gray-50"}
+                      >
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
               <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                 <SelectTrigger className={`bg-background/80 ${selectedStatus !== "All Statuses" ? getStatusColor(selectedStatus) : ""}`}>
@@ -1222,7 +1516,7 @@ export default function Activities() {
               <div>
                 <h3 className="text-lg font-semibold mb-4 text-blue-800">Activity Log</h3>
                 <div className="space-y-2">
-                  {selectedActivity.activityLog.map((log, idx) => (
+                  {(selectedActivity.activityLog || []).map((log, idx) => (
                     <div key={idx} className="flex items-center space-x-2 p-2 bg-gray-50 rounded text-sm">
                       <User className="h-3 w-3 text-gray-600" />
                       <span className="font-medium">{log.user}</span>
@@ -1262,7 +1556,88 @@ export default function Activities() {
               Update activity or support ticket information with full tracking capabilities.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-6 py-4">
+          {user?.department === 'Support' && (selectedActivity?.isTicket || editActivity?.ticketType) && (
+            <div className="grid gap-6 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-ticket-title">Title *</Label>
+                <Input id="edit-ticket-title" value={editTicketSupport.title} onChange={(e) => setEditTicketSupport(v => ({...v, title: e.target.value}))} placeholder="Short issue summary" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ticket-client">Client *</Label>
+                  <Select value={editTicketSupport.client} onValueChange={(val) => setEditTicketSupport(v => ({...v, client: val}))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.filter(c => c !== "All Clients").sort().map(c => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Assignees *</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {TEAM_MEMBERS.map(m => (
+                      <label key={m.name} className="flex items-center space-x-2 p-2 rounded bg-background/50">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                          checked={Array.isArray(editTicketSupport.assignees) ? editTicketSupport.assignees.includes(m.name) : false}
+                          onChange={(e) => {
+                            const current = Array.isArray(editTicketSupport.assignees) ? editTicketSupport.assignees : [];
+                            const updated = e.target.checked ? [...current, m.name] : current.filter(n => n !== m.name);
+                            setEditTicketSupport(v => ({...v, assignees: updated}));
+                          }}
+                        />
+                        <span className="text-sm">{m.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ticket-priority">Priority</Label>
+                  <Select value={editTicketSupport.priority} onValueChange={(val) => setEditTicketSupport(v => ({...v, priority: val}))}>
+                    <SelectTrigger className={editTicketSupport.priority ? getSupportPriorityColor(editTicketSupport.priority) + " bg-opacity-20" : ""}>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="urgent" className={getSupportPriorityColor('urgent') + ' hover:opacity-90'}>Urgent</SelectItem>
+                      <SelectItem value="high" className={getSupportPriorityColor('high') + ' hover:opacity-90'}>High</SelectItem>
+                      <SelectItem value="medium" className={getSupportPriorityColor('medium') + ' hover:opacity-90'}>Medium</SelectItem>
+                      <SelectItem value="low" className={getSupportPriorityColor('low') + ' hover:opacity-90'}>Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ticket-category">Category</Label>
+                  <Select value={editTicketSupport.category} onValueChange={(val) => setEditTicketSupport(v => ({...v, category: val}))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Bug">Bug</SelectItem>
+                      <SelectItem value="Question">Question</SelectItem>
+                      <SelectItem value="Feature">Feature</SelectItem>
+                      <SelectItem value="Training">Training</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-ticket-description">Description</Label>
+                <Textarea id="edit-ticket-description" rows={4} value={editTicketSupport.description} onChange={(e) => setEditTicketSupport(v => ({...v, description: e.target.value}))} placeholder="Describe the issue..." />
+              </div>
+              <div className="flex items-center space-x-2 pt-2">
+                <input id="edit-ticket-premium" type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded" checked={editTicketSupport.premium} onChange={(e) => setEditTicketSupport(v => ({...v, premium: e.target.checked}))} />
+                <Label htmlFor="edit-ticket-premium">Premium</Label>
+              </div>
+            </div>
+          )}
+          <div className={`grid gap-6 py-4 ${user?.department === 'Support' && (selectedActivity?.isTicket || editActivity?.ticketType) ? 'hidden' : ''}`}>
             {/* Activity Type & Category */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -1522,7 +1897,10 @@ export default function Activities() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateActivity} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleUpdateSupportTicket} className={`bg-blue-600 hover:bg-blue-700 ${user?.department === 'Support' && (selectedActivity?.isTicket || editActivity?.ticketType) ? '' : 'hidden'}`}>
+              Update Ticket
+            </Button>
+            <Button onClick={handleUpdateActivity} className={`bg-blue-600 hover:bg-blue-700 ${user?.department === 'Support' && (selectedActivity?.isTicket || editActivity?.ticketType) ? 'hidden' : ''}`}>
               Update Activity
             </Button>
           </DialogFooter>

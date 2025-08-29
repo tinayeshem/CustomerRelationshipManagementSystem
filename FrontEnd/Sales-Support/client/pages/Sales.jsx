@@ -1,5 +1,5 @@
 // Sales.jsx
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { TEAM_MEMBER_NAMES } from "@/constants/teamMembers";
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle,
@@ -281,10 +281,78 @@ export default function Sales() {
     []
   );
 
-  const [leadsList, setLeadsList] = useState(normalizedSeed);
+  const [leadsList, setLeadsList] = useState([]);
   const [isNewOpen, setIsNewOpen] = useState(false);
+
+  // Load organizations from Organization dashboard
+  const [organizations, setOrganizations] = useState(() => {
+    try {
+      const saved = localStorage.getItem("organizationData");
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    const reloadOrgs = () => {
+      try {
+        const saved = localStorage.getItem("organizationData");
+        setOrganizations(saved ? JSON.parse(saved) : []);
+      } catch {
+        setOrganizations([]);
+      }
+    };
+    window.addEventListener("organizationDataUpdated", reloadOrgs);
+    const onVis = () => { if (!document.hidden) reloadOrgs(); };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      window.removeEventListener("organizationDataUpdated", reloadOrgs);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, []);
+
+  // Initialize/Sync leads from organizations
+  useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
+    const mapped = (organizations || []).map((o, idx) => ({
+      id: `LEAD-ORG-${o?.id ?? idx}`,
+      name: o?.organizationName || o?.name || "Organization",
+      contacts: [],
+      contact: "",
+      phone: o?.phone || "",
+      email: o?.email || "",
+      value: 0,
+      probability: 10,
+      stage: "Discovery",
+      source: "Organization",
+      region: o?.region || "",
+      product: "",
+      assignee: "",
+      team: Array.isArray(o?.responsibleMembers) ? o.responsibleMembers : [],
+      created: today,
+      nextAction: "",
+      status: "Cold",
+      timeSpent: 0,
+      lastActivity: today
+    }));
+
+    const initFlag = localStorage.getItem("sales_init_from_orgs") === "1";
+    if (!initFlag) {
+      setLeadsList(mapped);
+      localStorage.setItem("sales_init_from_orgs", "1");
+      return;
+    }
+    // After initial replacement, keep org-derived leads in sync but retain user-added leads
+    setLeadsList((prev) => {
+      const nonOrg = Array.isArray(prev) ? prev.filter(l => typeof l?.id !== "string" || !l.id.startsWith("LEAD-ORG-")) : [];
+      return [...mapped, ...nonOrg];
+    });
+  }, [organizations]);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editLead, setEditLead] = useState(null);
 
   // ------- New lead form -------
   const [newLead, setNewLead] = useState({
@@ -602,8 +670,8 @@ export default function Sales() {
         </Card>
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Charts (removed per request) */}
+      <div className="hidden">
         <Card className="border-blue-200">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
@@ -766,6 +834,14 @@ export default function Sales() {
                       <Eye className="h-3 w-3 mr-1" />
                       View
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                      onClick={() => { setEditLead(lead); setIsEditOpen(true); }}
+                    >
+                      Edit
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -777,6 +853,97 @@ export default function Sales() {
           </div>
         </CardContent>
       </Card>
+
+      {/* -------- EDIT DIALOG -------- */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-[800px]">
+          <DialogHeader>
+            <DialogTitle>Edit Lead</DialogTitle>
+            <DialogDescription>Update lead details for your pipeline.</DialogDescription>
+          </DialogHeader>
+          {editLead && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Company/Organization *</Label>
+                  <Input
+                    value={editLead.name}
+                    onChange={(e) => setEditLead((p) => ({ ...p, name: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Stage</Label>
+                  <Select value={editLead.stage} onValueChange={(v) => setEditLead((p) => ({ ...p, stage: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Select stage" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Discovery">Discovery</SelectItem>
+                      <SelectItem value="Proposal">Proposal</SelectItem>
+                      <SelectItem value="Negotiation">Negotiation</SelectItem>
+                      <SelectItem value="Closing">Closing</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <ContactsEditor
+                contacts={editLead.contacts || []}
+                onChange={(c) => setEditLead((p) => ({ ...p, contacts: c, contact: c?.[0]?.name || p.contact }))}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Deal Value (€)</Label>
+                  <Input type="number" value={editLead.value} onChange={(e) => setEditLead((p) => ({ ...p, value: parseFloat(e.target.value || '0') }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Probability (%)</Label>
+                  <Input type="number" min="0" max="100" value={editLead.probability} onChange={(e) => setEditLead((p) => ({ ...p, probability: parseInt(e.target.value || '0', 10) }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Next Action Date</Label>
+                  <Input type="date" value={editLead.nextAction || ''} onChange={(e) => setEditLead((p) => ({ ...p, nextAction: e.target.value }))} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>Lead Source</Label>
+                  <Input value={editLead.source || ''} onChange={(e) => setEditLead((p) => ({ ...p, source: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Region</Label>
+                  <Input value={editLead.region || ''} onChange={(e) => setEditLead((p) => ({ ...p, region: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Product</Label>
+                  <Input value={editLead.product || ''} onChange={(e) => setEditLead((p) => ({ ...p, product: e.target.value }))} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Owner (Assignee)</Label>
+                  <Input value={editLead.assignee || ''} onChange={(e) => setEditLead((p) => ({ ...p, assignee: e.target.value }))} />
+                </div>
+                <TeamSelector team={editLead.team || []} onChange={(t) => setEditLead((p) => ({ ...p, team: t }))} />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Notes</Label>
+                <Textarea rows={3} value={editLead.notes || ''} onChange={(e) => setEditLead((p) => ({ ...p, notes: e.target.value }))} />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
+              if (!editLead?.name) { alert('Name is required'); return; }
+              setLeadsList((prev) => prev.map((l) => l.id === editLead.id ? { ...l, ...editLead } : l));
+              setIsEditOpen(false);
+            }}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* -------- VIEW DIALOG -------- */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>

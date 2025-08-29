@@ -33,6 +33,7 @@ export const AuthProvider = ({ children }) => {
           "activities",
           "reports",
           "team-management",
+          "sales",
         ],
         isManager: true,
       },
@@ -47,7 +48,7 @@ export const AuthProvider = ({ children }) => {
         department: "Sales",
         avatar: "MP",
         bgColor: "from-green-500 to-green-600",
-        permissions: ["dashboard", "clients", "activities", "reports"],
+        permissions: ["dashboard", "clients", "activities", "reports", "sales"],
         isManager: false,
       },
     },
@@ -61,7 +62,7 @@ export const AuthProvider = ({ children }) => {
         department: "Support",
         avatar: "PB",
         bgColor: "from-purple-500 to-purple-600",
-        permissions: ["dashboard", "activities", "notifications", "support"],
+        permissions: ["dashboard", "activities", "notifications", "support", "reports"],
         isManager: false,
       },
     },
@@ -89,7 +90,7 @@ export const AuthProvider = ({ children }) => {
         department: "Support",
         avatar: "SA",
         bgColor: "from-pink-500 to-pink-600",
-        permissions: ["dashboard", "activities", "notifications", "support"],
+        permissions: ["dashboard", "activities", "notifications", "support", "reports"],
         isManager: false,
       },
     },
@@ -268,8 +269,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const hasPermission = (permission) => {
-    if (!user || !user.permissions) return false;
-    return user.permissions.includes(permission);
+    if (!user) return false;
+    if (user.department === 'Support' && permission === 'reports') return true;
+    return Array.isArray(user.permissions) && user.permissions.includes(permission);
   };
 
   const isManager = () => {

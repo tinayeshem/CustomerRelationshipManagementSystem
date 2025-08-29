@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TEAM_MEMBERS } from "@/constants/teamMembers";
+import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { 
-  AlertTriangle, 
-  Clock, 
-  TrendingUp, 
+import {
+  AlertTriangle,
+  Clock,
+  TrendingUp,
   BarChart3,
   CheckCircle,
   Star,
@@ -26,7 +29,8 @@ import {
   Filter,
   Search,
   User,
-  ExternalLink
+  ExternalLink,
+  Plus
 } from "lucide-react";
 
 // Sample support data with urgency indicators
@@ -154,24 +158,132 @@ const formatTimeAgo = (dateString) => {
 };
 
 export default function Support() {
+  const { user } = useAuth();
   const [selectedTickets, setSelectedTickets] = useState([]);
   const [selectedTeamMember, setSelectedTeamMember] = useState(null);
   const [isHighPriorityDialogOpen, setIsHighPriorityDialogOpen] = useState(false);
   const [isOverdueDialogOpen, setIsOverdueDialogOpen] = useState(false);
   const [isPremiumDialogOpen, setIsPremiumDialogOpen] = useState(false);
-  const [isPerformanceDialogOpen, setIsPerformanceDialogOpen] = useState(false);
+  const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
+  const [isTicketViewOpen, setIsTicketViewOpen] = useState(false);
+  const [selectedTicketActivity, setSelectedTicketActivity] = useState(null);
+  const [isEditingTicket, setIsEditingTicket] = useState(false);
+  const [editingActivityId, setEditingActivityId] = useState(null);
+  const [newTicket, setNewTicket] = useState({
+    title: "",
+    client: "",
+    priority: "medium",
+    category: "Bug",
+    assignees: [],
+    description: "",
+    premium: false,
+    dueDate: "",
+  });
 
-  const highPriorityTickets = supportTickets.filter(ticket => 
+  const storedOrgs = typeof window !== "undefined" ? localStorage.getItem("organizationData") : null;
+  const orgNames = storedOrgs ? JSON.parse(storedOrgs).map(o => o.organizationName) : [];
+  const defaultClients = ["Zagreb Municipality", "Sports Club Dinamo", "Split City Council", "Tech Solutions Ltd"];
+  const clients = Array.from(new Set([...defaultClients, ...orgNames]));
+
+  // Load activities and derive support tickets from localStorage
+  const [activitiesList, setActivitiesList] = useState([]);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('activitiesList');
+      setActivitiesList(saved ? JSON.parse(saved) : []);
+    } catch { setActivitiesList([]); }
+    const handler = () => {
+      try {
+        const saved = localStorage.getItem('activitiesList');
+        setActivitiesList(saved ? JSON.parse(saved) : []);
+      } catch {}
+    };
+    window.addEventListener('activitiesListUpdated', handler);
+    return () => window.removeEventListener('activitiesListUpdated', handler);
+  }, []);
+
+  const derivedTickets = (Array.isArray(activitiesList) ? activitiesList : [])
+    .filter(a => a?.isTicket || a?.ticketType)
+    .map(a => {
+      const priority = (a.priority || "").toString().toLowerCase();
+      const statusRaw = (a.status || "").toString().toLowerCase();
+      const status = statusRaw === 'to do' || statusRaw === 'todo' ? 'open'
+        : statusRaw === 'in progress' ? 'in-progress'
+        : statusRaw === 'done' ? 'resolved' : statusRaw;
+      const createdIso = (() => {
+        const dt = `${a.date || ''}T${a.time || '00:00'}`;
+        const d = new Date(dt);
+        return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+      })();
+      const dueIso = a.deadline ? new Date(`${a.deadline}T23:59:59`).toISOString() : null;
+      const assignee = Array.isArray(a.responsible) ? a.responsible.join(', ') : (a.responsible || '');
+      const title = a.notes || `${a.ticketType || 'Ticket'} - ${a.linkedClient || ''}`;
+      return {
+        id: `TKT-${a.id}`,
+        title,
+        client: a.linkedClient || '',
+        priority,
+        status,
+        assignee,
+        created: createdIso,
+        dueDate: dueIso,
+        category: a.ticketType || '',
+        type: 'Support',
+        premium: !!a.premiumSupport,
+        description: a.notes || ''
+      };
+    });
+
+  const allTickets = derivedTickets.length > 0 ? derivedTickets : supportTickets;
+
+  const highPriorityTickets = allTickets.filter(ticket =>
     ticket.priority === "urgent" || ticket.priority === "high"
   );
 
-  const overdueTickets = supportTickets.filter(ticket => {
+  const overdueTickets = allTickets.filter(ticket => {
+    if (!ticket.dueDate) return false;
     const dueDate = new Date(ticket.dueDate);
     const now = new Date();
     return dueDate < now && ticket.status !== "resolved";
   });
 
-  const premiumTickets = supportTickets.filter(ticket => ticket.premium);
+  const premiumTickets = allTickets.filter(ticket => ticket.premium);
+
+  // Activities-style filters for Support
+  const supportTicketCategories = ["All Categories", "Bug", "Question", "Feature", "Training"];
+  const statuses = ["All Statuses", "To Do", "In Progress", "Done"];
+  const priorities = ["All Priorities", "Low", "Medium", "High", "Urgent"];
+  const teamMembersOptions = ["All Members", ...TEAM_MEMBERS.map(m => m.name)];
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedType, setSelectedType] = useState("All Categories");
+  const [selectedPremiumClient, setSelectedPremiumClient] = useState("All");
+  const [selectedStatus, setSelectedStatus] = useState("All Statuses");
+  const [selectedMember, setSelectedMember] = useState("All Members");
+  const [selectedPriority, setSelectedPriority] = useState("All Priorities");
+  const [selectedClient, setSelectedClient] = useState("All Clients");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const clientsOptions = Array.from(new Set(["All Clients", ...clients, ...((activitiesList||[]).map(a => a.linkedClient))])).filter(Boolean);
+
+  const filteredSupportActivities = (activitiesList || []).filter(a => a?.isTicket || a?.ticketType).filter((activity) => {
+    const responsibleString = Array.isArray(activity.responsible) ? activity.responsible.join(", ") : (activity.responsible || "");
+    const matchesSearch = (activity.linkedClient || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         responsibleString.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (activity.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = selectedType === "All Categories" || activity.ticketType === selectedType;
+    const matchesPremium = selectedPremiumClient === "All" || !!activity.premiumSupport === (selectedPremiumClient === "Premium");
+    const matchesStatus = selectedStatus === "All Statuses" || activity.status === selectedStatus;
+    const matchesMember = selectedMember === "All Members" || responsibleString.includes(selectedMember);
+    const matchesPriority = selectedPriority === "All Priorities" || activity.priority === selectedPriority;
+    const matchesClient = selectedClient === "All Clients" || activity.linkedClient === selectedClient;
+    const matchesFromDate = !fromDate || (activity.date || "") >= fromDate;
+    const matchesToDate = !toDate || (activity.date || "") <= toDate;
+
+    return matchesSearch && matchesType && matchesPremium && matchesStatus &&
+           matchesMember && matchesPriority && matchesClient && matchesFromDate && matchesToDate;
+  });
 
   const showHighPriorityTickets = () => {
     setSelectedTickets(highPriorityTickets);
@@ -188,13 +300,30 @@ export default function Support() {
     setIsPremiumDialogOpen(true);
   };
 
-  const showPerformanceReport = () => {
-    setIsPerformanceDialogOpen(true);
-  };
 
   return (
     <div className="p-6 space-y-6 bg-gradient-to-br from-blue-50 via-white to-blue-100 min-h-screen">
       {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <a href="/projects">
+            <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">Create Project</Button>
+          </a>
+        </div>
+        <Button
+          onClick={() => {
+            setIsEditingTicket(false);
+            setEditingActivityId(null);
+            setNewTicket({ title: "", client: "", priority: "medium", category: "Bug", assignees: [], description: "", premium: false, dueDate: "" });
+            setIsRegisterDialogOpen(true);
+          }}
+          className="bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Register Ticket
+        </Button>
+      </div>
+
       <div className="text-center mb-8">
         <div className="flex items-center justify-center mb-4">
           <div className="relative">
@@ -221,7 +350,7 @@ export default function Support() {
             <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center mx-auto mb-3 text-white shadow-lg">
               <AlertTriangle className="h-6 w-6" />
             </div>
-            <p className="text-2xl font-bold text-dark-blue">{supportTickets.filter(t => t.status !== "resolved").length}</p>
+            <p className="text-2xl font-bold text-dark-blue">{allTickets.filter(t => t.status !== "resolved").length}</p>
             <p className="text-sm text-gray-600">Open Tickets</p>
             <div className="mt-2">
               <Badge className="bg-red-100 text-red-800 text-xs">
@@ -277,6 +406,122 @@ export default function Support() {
         </Card>
       </div>
 
+      {/* Advanced Ticket Filters (from Activities) */}
+      <Card className="border border-blue-200 bg-white shadow-lg">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-dark-blue">Advanced Ticket Filters</CardTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearchTerm("");
+                  setSelectedType("All Categories");
+                  setSelectedPremiumClient("All");
+                  setSelectedStatus("All Statuses");
+                  setSelectedMember("All Members");
+                  setSelectedPriority("All Priorities");
+                  setSelectedClient("All Clients");
+                  setFromDate("");
+                  setToDate("");
+                }}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
+              >
+                Reset Filters
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search tickets, clients, or notes..."
+                className="pl-10 bg-background/80"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger className="bg-background/80">
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {supportTicketCategories.map((type) => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedPremiumClient} onValueChange={setSelectedPremiumClient}>
+                <SelectTrigger className="bg-background/80">
+                  <SelectValue placeholder="Premium Clients" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["All", "Premium", "Not Premium"].map((opt) => (
+                    <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="bg-background/80">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statuses.map((status) => (
+                    <SelectItem key={status} value={status}>{status}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Select value={selectedClient} onValueChange={setSelectedClient}>
+                <SelectTrigger className="bg-background/80">
+                  <SelectValue placeholder="Client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clientsOptions.map((client) => (
+                    <SelectItem key={client} value={client}>{client}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedMember} onValueChange={setSelectedMember}>
+                <SelectTrigger className="bg-background/80">
+                  <SelectValue placeholder="Team Member" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamMembersOptions.map((member) => (
+                    <SelectItem key={member} value={member}>{member}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={selectedPriority} onValueChange={setSelectedPriority}>
+                <SelectTrigger className="bg-background/80">
+                  <SelectValue placeholder="Priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  {priorities.map((priority) => (
+                    <SelectItem key={priority} value={priority}>{priority}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="fromDate" className="text-sm font-medium text-gray-700">From Date</Label>
+                <Input id="fromDate" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="bg-background/80" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="toDate" className="text-sm font-medium text-gray-700">To Date</Label>
+                <Input id="toDate" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="bg-background/80" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Quick Actions */}
       <Card className="border border-blue-200 bg-white shadow-lg">
         <CardHeader>
@@ -284,50 +529,122 @@ export default function Support() {
           <CardDescription>Access frequently used support management features</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button 
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <Button
               onClick={showHighPriorityTickets}
-              className="h-20 flex-col space-y-2 bg-gradient-to-br from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700"
+              className="w-full h-24 flex flex-col items-center justify-center gap-2 text-center bg-gradient-to-br from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700"
             >
               <AlertTriangle className="h-6 w-6" />
               <span className="text-sm">High Priority Tickets</span>
               <Badge className="bg-red-700 text-white">{highPriorityTickets.length}</Badge>
             </Button>
-            
-            <Button 
+
+            <Button
               onClick={showOverdueItems}
-              className="h-20 flex-col space-y-2 bg-gradient-to-br from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700"
+              className="w-full h-24 flex flex-col items-center justify-center gap-2 text-center bg-gradient-to-br from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700"
             >
               <Clock className="h-6 w-6" />
               <span className="text-sm">Overdue Items</span>
               <Badge className="bg-orange-700 text-white">{overdueTickets.length}</Badge>
             </Button>
-            
-            <Button 
+
+            <Button
               onClick={showPremiumSupport}
-              className="h-20 flex-col space-y-2 bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
+              className="w-full h-24 flex flex-col items-center justify-center gap-2 text-center bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
             >
               <Star className="h-6 w-6" />
               <span className="text-sm">Premium Support</span>
               <Badge className="bg-blue-700 text-white">{premiumTickets.length}</Badge>
             </Button>
-            
-            <Button 
-              onClick={showPerformanceReport}
-              className="h-20 flex-col space-y-2 bg-gradient-to-br from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700"
-            >
-              <BarChart3 className="h-6 w-6" />
-              <span className="text-sm">Performance Report</span>
-              <Badge className="bg-green-700 text-white">Live</Badge>
-            </Button>
+
           </div>
         </CardContent>
       </Card>
 
+      {/* Tickets List (from Activities) */}
+      <div className="space-y-4">
+        {filteredSupportActivities.map((activity) => (
+          <Card key={activity.id} className="border-blue-200/50 bg-white/90 backdrop-blur-sm hover:shadow-lg transition-all duration-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-3 mt-1">
+                    <h3 className="font-semibold text-foreground">{activity.linkedClient}</h3>
+                    <Badge variant="outline">{activity.status}</Badge>
+                    {activity.ticketType && (
+                      <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+                        {activity.ticketType}
+                      </Badge>
+                    )}
+                    {activity.premiumSupport && (
+                      <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">Premium</Badge>
+                    )}
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-3">{activity.notes}</p>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-muted-foreground mb-3">
+                    <div className="flex items-center space-x-1">
+                      <Calendar className="h-3 w-3" />
+                      <span>{activity.date} at {activity.time}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <User className="h-3 w-3" />
+                      <span>{Array.isArray(activity.responsible) ? activity.responsible.join(", ") : activity.responsible}</span>
+                    </div>
+                    {activity.deadline && (
+                      <div className="flex items-center space-x-1">
+                        <Clock className="h-3 w-3" />
+                        <span>Due: {activity.deadline}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end space-y-2 mt-1">
+                  <Badge className={getPriorityColor((activity.priority || '').toLowerCase())}>
+                    {activity.priority}
+                  </Badge>
+                  <div className="flex space-x-2 items-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setSelectedTicketActivity(activity); setIsTicketViewOpen(true); }}
+                      className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                    >
+                      <Eye className="h-3 w-3 mr-1" />
+                      View
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setIsEditingTicket(true);
+                        setEditingActivityId(activity.id);
+                        setNewTicket({
+                          title: activity.notes || "",
+                          client: activity.linkedClient || "",
+                          priority: ((activity.priority || "Medium").toString().toLowerCase()),
+                          category: activity.ticketType || "Bug",
+                          assignees: Array.isArray(activity.responsible) ? activity.responsible : (activity.responsible ? [activity.responsible] : []),
+                          description: activity.notes || "",
+                          premium: !!activity.premiumSupport,
+                          dueDate: activity.deadline || ""
+                        });
+                        setIsRegisterDialogOpen(true);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {/* Recent Tickets and Team Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Tickets */}
-        <Card className="border border-blue-200 bg-white shadow-lg">
+        <Card className="hidden">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="text-dark-blue">Recent Tickets</span>
@@ -338,7 +655,7 @@ export default function Support() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {supportTickets.slice(0, 3).map((ticket) => (
+            {[...allTickets].sort((a,b) => new Date(b.created) - new Date(a.created)).slice(0, 3).map((ticket) => (
               <div key={ticket.id} className="flex items-center space-x-3 p-3 rounded-lg bg-blue-50 border border-blue-100">
                 <div className="flex-shrink-0">
                   <Badge className={`${getPriorityColor(ticket.priority)} text-xs`}>
@@ -364,7 +681,7 @@ export default function Support() {
         </Card>
 
         {/* Team Performance */}
-        <Card className="border border-blue-200 bg-white shadow-lg">
+        <Card className="hidden">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <span className="text-dark-blue">Team Performance</span>
@@ -407,6 +724,95 @@ export default function Support() {
         </Card>
       </div>
 
+      {/* Ticket Details Dialog (from Tickets List) */}
+      <Dialog open={isTicketViewOpen} onOpenChange={setIsTicketViewOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <span>Ticket Details</span>
+            </DialogTitle>
+            <DialogDescription>
+              Full details for the selected support ticket
+            </DialogDescription>
+          </DialogHeader>
+          {selectedTicketActivity && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <Badge variant="outline">{selectedTicketActivity.status}</Badge>
+                  <p className="text-xs text-gray-600 mt-1">Status</p>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <Badge className={getPriorityColor((selectedTicketActivity.priority || '').toLowerCase())}>
+                    {selectedTicketActivity.priority}
+                  </Badge>
+                  <p className="text-xs text-gray-600 mt-1">Priority</p>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  <Badge variant="outline">{selectedTicketActivity.ticketType || 'Ticket'}</Badge>
+                  <p className="text-xs text-gray-600 mt-1">Category</p>
+                </div>
+                <div className="text-center p-4 bg-blue-50 rounded-lg">
+                  {selectedTicketActivity.premiumSupport ? (
+                    <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Premium</Badge>
+                  ) : (
+                    <Badge variant="outline">Standard</Badge>
+                  )}
+                  <p className="text-xs text-gray-600 mt-1">Support Level</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-blue-800">Ticket Information</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Client</p>
+                      <p className="text-sm text-gray-600">{selectedTicketActivity.linkedClient}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Date & Time</p>
+                      <p className="text-sm text-gray-600">{selectedTicketActivity.date} at {selectedTicketActivity.time}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Responsible</p>
+                      <p className="text-sm text-gray-600">{Array.isArray(selectedTicketActivity.responsible) ? selectedTicketActivity.responsible.join(', ') : selectedTicketActivity.responsible}</p>
+                    </div>
+                    {selectedTicketActivity.deadline && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Deadline</p>
+                        <p className="text-sm text-gray-600">{selectedTicketActivity.deadline}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-blue-800">Details</h3>
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-700">Title/Notes</p>
+                      <p className="text-sm text-gray-600">{selectedTicketActivity.notes}</p>
+                    </div>
+                    {Array.isArray(selectedTicketActivity.attachments) && selectedTicketActivity.attachments.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">Attachments</p>
+                        <div className="space-y-1 text-sm text-gray-600">
+                          {selectedTicketActivity.attachments.map((f, i) => (<div key={i}>{f}</div>))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTicketViewOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* High Priority Tickets Dialog */}
       <Dialog open={isHighPriorityDialogOpen} onOpenChange={setIsHighPriorityDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -428,7 +834,6 @@ export default function Support() {
                       <Badge className={`${getPriorityColor(ticket.priority)}`}>
                         {ticket.priority.toUpperCase()}
                       </Badge>
-                      <Badge variant="outline">{ticket.id}</Badge>
                       {ticket.premium && <Badge className="bg-yellow-100 text-yellow-800">PREMIUM</Badge>}
                     </div>
                     <h3 className="font-semibold text-gray-800 mb-2">{ticket.title}</h3>
@@ -446,7 +851,13 @@ export default function Support() {
                     <Badge className={`${getStatusColor(ticket.status)}`}>
                       {ticket.status}
                     </Badge>
-                    <Button size="sm" className="bg-dark-blue hover:bg-dark-blue-hover text-white">
+                    <Button size="sm" className="bg-dark-blue hover:bg-dark-blue-hover text-white" onClick={() => {
+                      try {
+                        const id = typeof ticket.id === 'string' && ticket.id.startsWith('TKT-') ? ticket.id.slice(4) : '';
+                        if (id) localStorage.setItem('openActivityId', id);
+                      } catch {}
+                      window.location.href = '/activities';
+                    }}>
                       <Eye className="h-3 w-3 mr-1" />
                       View
                     </Button>
@@ -597,88 +1008,169 @@ export default function Support() {
         </DialogContent>
       </Dialog>
 
-      {/* Performance Report Dialog */}
-      <Dialog open={isPerformanceDialogOpen} onOpenChange={setIsPerformanceDialogOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+
+      {/* Register Ticket Dialog */}
+      <Dialog open={isRegisterDialogOpen} onOpenChange={setIsRegisterDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="flex items-center space-x-2">
-              <BarChart3 className="h-5 w-5 text-green-600" />
-              <span>Team Performance Report</span>
-            </DialogTitle>
+            <DialogTitle>{isEditingTicket ? "Edit Support Ticket" : "Register Support Ticket"}</DialogTitle>
             <DialogDescription>
-              Comprehensive performance metrics and team statistics
+              {isEditingTicket ? "Update the support ticket. Changes will also appear in Activities." : "Create a new support ticket. It will also appear in Activities."}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6">
-            {/* Overall Stats */}
-            <div className="grid grid-cols-4 gap-4">
-              <Card className="p-4 text-center">
-                <h3 className="text-2xl font-bold text-dark-blue">{supportTickets.length}</h3>
-                <p className="text-sm text-gray-600">Total Tickets</p>
-              </Card>
-              <Card className="p-4 text-center">
-                <h3 className="text-2xl font-bold text-green-600">87%</h3>
-                <p className="text-sm text-gray-600">On-Time Resolution</p>
-              </Card>
-              <Card className="p-4 text-center">
-                <h3 className="text-2xl font-bold text-blue-600">2.4h</h3>
-                <p className="text-sm text-gray-600">Avg Response Time</p>
-              </Card>
-              <Card className="p-4 text-center">
-                <h3 className="text-2xl font-bold text-yellow-600">4.7/5</h3>
-                <p className="text-sm text-gray-600">Customer Rating</p>
-              </Card>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="ticket-title">Title *</Label>
+              <Input id="ticket-title" value={newTicket.title} onChange={(e) => setNewTicket(v => ({...v, title: e.target.value}))} placeholder="Short issue summary" />
             </div>
-
-            {/* Team Details */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 text-dark-blue">Individual Performance</h3>
-              <div className="space-y-4">
-                {teamMembers.map((member, idx) => (
-                  <Card key={idx} className="p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className="font-semibold text-gray-800">{member.name}</h4>
-                        <p className="text-sm text-gray-600">{member.role}</p>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-dark-blue">{member.activeTickets}</p>
-                          <p className="text-xs text-gray-600">Active</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-lg font-bold text-green-600">{member.resolvedToday}</p>
-                          <p className="text-xs text-gray-600">Resolved Today</p>
-                        </div>
-                        <div className="text-center">
-                          <div className="flex items-center space-x-1">
-                            <Star className="h-4 w-4 text-yellow-500" />
-                            <span className="text-lg font-bold">{member.rating}</span>
-                          </div>
-                          <p className="text-xs text-gray-600">Rating</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-gray-600">Bonus Progress ({member.bonusProgress}%)</span>
-                        <span className="text-gray-800">{member.bonusProgress >= 80 ? "On Track" : "Behind"}</span>
-                      </div>
-                      <Progress value={member.bonusProgress} className="h-3" />
-                    </div>
-                  </Card>
-                ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ticket-client">Client *</Label>
+                <Select value={newTicket.client} onValueChange={(val) => setNewTicket(v => ({...v, client: val}))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map(c => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Assignees *</Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {TEAM_MEMBERS.map(m => (
+                    <label key={m.name} className="flex items-center space-x-2 p-2 rounded bg-background/50">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                        checked={Array.isArray(newTicket.assignees) ? newTicket.assignees.includes(m.name) : false}
+                        onChange={(e) => {
+                          const current = Array.isArray(newTicket.assignees) ? newTicket.assignees : [];
+                          const updated = e.target.checked
+                            ? [...current, m.name]
+                            : current.filter(n => n !== m.name);
+                          setNewTicket(v => ({...v, assignees: updated}));
+                        }}
+                      />
+                      <span className="text-sm">{m.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ticket-priority">Priority</Label>
+                <Select value={newTicket.priority} onValueChange={(val) => setNewTicket(v => ({...v, priority: val}))}>
+                  <SelectTrigger className={newTicket.priority ? getPriorityColor(newTicket.priority) + " bg-opacity-20" : ""}>
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="urgent" className={getPriorityColor("urgent") + " hover:opacity-90"}>Urgent</SelectItem>
+                    <SelectItem value="high" className={getPriorityColor("high") + " hover:opacity-90"}>High</SelectItem>
+                    <SelectItem value="medium" className={getPriorityColor("medium") + " hover:opacity-90"}>Medium</SelectItem>
+                    <SelectItem value="low" className={getPriorityColor("low") + " hover:opacity-90"}>Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ticket-category">Category</Label>
+                <Select value={newTicket.category} onValueChange={(val) => setNewTicket(v => ({...v, category: val}))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Bug">Bug</SelectItem>
+                    <SelectItem value="Question">Question</SelectItem>
+                    <SelectItem value="Feature">Feature</SelectItem>
+                    <SelectItem value="Training">Training</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ticket-dueDate">Due Date</Label>
+              <Input id="ticket-dueDate" type="date" value={newTicket.dueDate} onChange={(e) => setNewTicket(v => ({...v, dueDate: e.target.value}))} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ticket-description">Description</Label>
+              <Textarea id="ticket-description" rows={4} value={newTicket.description} onChange={(e) => setNewTicket(v => ({...v, description: e.target.value}))} placeholder="Describe the issue..." />
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <input id="ticket-premium" type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded" checked={newTicket.premium} onChange={(e) => setNewTicket(v => ({...v, premium: e.target.checked}))} />
+              <Label htmlFor="ticket-premium">Premium</Label>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsPerformanceDialogOpen(false)}>
-              Close
-            </Button>
-            <Button className="bg-green-600 hover:bg-green-700 text-white">
-              <Download className="h-4 w-4 mr-2" />
-              Export Report
-            </Button>
+            <Button variant="outline" onClick={() => { setIsRegisterDialogOpen(false); setIsEditingTicket(false); setEditingActivityId(null); setNewTicket({ title: "", client: "", priority: "medium", category: "Bug", assignees: [], description: "", premium: false, dueDate: "" }); }}>Cancel</Button>
+            <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => {
+              if (!newTicket.title || !newTicket.client || !Array.isArray(newTicket.assignees) || newTicket.assignees.length === 0) {
+                alert("Please fill in title, client and at least one assignee");
+                return;
+              }
+              try {
+                const saved = localStorage.getItem('activitiesList');
+                const list = saved ? JSON.parse(saved) : [];
+                const mapPriority = (p) => p === 'urgent' ? 'Urgent' : p === 'high' ? 'High' : p === 'low' ? 'Low' : 'Medium';
+                if (isEditingTicket && editingActivityId != null) {
+                  const updated = Array.isArray(list) ? list.map(a => a.id === editingActivityId ? {
+                    ...a,
+                    linkedClient: newTicket.client,
+                    responsible: newTicket.assignees,
+                    priority: mapPriority(newTicket.priority),
+                    ticketType: newTicket.category,
+                    notes: newTicket.description || newTicket.title,
+                    premiumSupport: !!newTicket.premium,
+                    deadline: newTicket.dueDate || ''
+                  } : a) : [];
+                  localStorage.setItem('activitiesList', JSON.stringify(updated));
+                  window.dispatchEvent(new Event('activitiesListUpdated'));
+                  setIsRegisterDialogOpen(false);
+                  setIsEditingTicket(false);
+                  setEditingActivityId(null);
+                  setNewTicket({ title: "", client: "", priority: "medium", category: "Bug", assignees: [], description: "", premium: false, dueDate: "" });
+                  alert('Ticket updated successfully');
+                } else {
+                  const now = new Date();
+                  const activity = {
+                    id: (list?.[0]?.id || 0) + list.length + 1,
+                    activityType: 'Email',
+                    category: 'Support',
+                    linkedClient: newTicket.client,
+                    unitType: 'Government',
+                    date: now.toISOString().split('T')[0],
+                    time: now.toTimeString().slice(0,5),
+                    responsible: newTicket.assignees,
+                    status: 'To Do',
+                    deadline: newTicket.dueDate || '',
+                    reminderDate: '',
+                    nextStep: '',
+                    nextStepDate: '',
+                    notes: newTicket.description || newTicket.title,
+                    attachments: [],
+                    costPerActivity: 0,
+                    premiumSupport: !!newTicket.premium,
+                    ticketType: newTicket.category,
+                    isTicket: true,
+                    priority: mapPriority(newTicket.priority),
+                    activityLog: [
+                      { user: Array.isArray(newTicket.assignees) ? newTicket.assignees.join(', ') : '', action: 'Created', timestamp: new Date().toLocaleString() }
+                    ],
+                  };
+                  const updated = [activity, ...list];
+                  localStorage.setItem('activitiesList', JSON.stringify(updated));
+                  window.dispatchEvent(new Event('activitiesListUpdated'));
+                  setIsRegisterDialogOpen(false);
+                  setNewTicket({ title: "", client: "", priority: "medium", category: "Bug", assignees: [], description: "", premium: false, dueDate: "" });
+                  alert('Ticket registered successfully');
+                }
+              } catch (e) {
+                console.error('Failed to save ticket', e);
+                alert('Failed to save ticket');
+              }
+            }}>{isEditingTicket ? "Save Changes" : "Register Ticket"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
