@@ -332,6 +332,7 @@ export default function Activities() {
     priority: ""
   });
 
+  const [editTicketSupport, setEditTicketSupport] = useState({ id: '', title: '', client: '', priority: 'medium', category: 'Bug', assignees: [], description: '', premium: false });
   const { user, getAllUsers } = useAuth();
 
   React.useEffect(() => {
@@ -517,8 +518,22 @@ export default function Activities() {
       attachments: activity.attachments || [],
       costPerActivity: activity.costPerActivity,
       premiumSupport: activity.premiumSupport,
-      priority: activity.priority
+      priority: activity.priority,
+      ticketType: activity.ticketType,
+      isTicket: activity.isTicket
     });
+    if (activity?.isTicket || activity?.ticketType) {
+      setEditTicketSupport({
+        id: activity.id,
+        title: activity.notes || '',
+        client: activity.linkedClient || '',
+        priority: (activity.priority || 'Medium').toLowerCase(),
+        category: activity.ticketType || 'Bug',
+        assignees: Array.isArray(activity.responsible) ? activity.responsible : (activity.responsible ? [activity.responsible] : []),
+        description: activity.notes || '',
+        premium: !!activity.premiumSupport,
+      });
+    }
     setIsEditDialogOpen(true);
   };
 
@@ -553,6 +568,36 @@ export default function Activities() {
 
     setIsEditDialogOpen(false);
     setIsViewDialogOpen(false); // Close view dialog too
+  };
+
+  const handleUpdateSupportTicket = () => {
+    if (!editTicketSupport.title || !editTicketSupport.client || !Array.isArray(editTicketSupport.assignees) || editTicketSupport.assignees.length === 0) {
+      alert('Please fill in title, client and at least one assignee');
+      return;
+    }
+    const mapPriority = (p) => p === 'urgent' ? 'Urgent' : p === 'high' ? 'High' : p === 'low' ? 'Low' : 'Medium';
+    const updatedActivitiesList = activitiesList.map(a => {
+      if (a.id !== editActivity.id) return a;
+      return {
+        ...a,
+        linkedClient: editTicketSupport.client,
+        responsible: editTicketSupport.assignees,
+        premiumSupport: !!editTicketSupport.premium,
+        ticketType: editTicketSupport.category,
+        isTicket: true,
+        notes: editTicketSupport.description || editTicketSupport.title,
+        priority: mapPriority(editTicketSupport.priority),
+        activityLog: [
+          ...(a.activityLog || []),
+          { user: Array.isArray(editTicketSupport.assignees) ? editTicketSupport.assignees.join(', ') : '', action: 'Updated', timestamp: new Date().toLocaleString() }
+        ]
+      };
+    });
+    setActivitiesList(updatedActivitiesList);
+    localStorage.setItem('activitiesList', JSON.stringify(updatedActivitiesList));
+    window.dispatchEvent(new Event('activitiesListUpdated'));
+    setIsEditDialogOpen(false);
+    setIsViewDialogOpen(false);
   };
 
   const resetFilters = () => {
@@ -1511,7 +1556,88 @@ export default function Activities() {
               Update activity or support ticket information with full tracking capabilities.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-6 py-4">
+          {user?.department === 'Support' && (selectedActivity?.isTicket || editActivity?.ticketType) && (
+            <div className="grid gap-6 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-ticket-title">Title *</Label>
+                <Input id="edit-ticket-title" value={editTicketSupport.title} onChange={(e) => setEditTicketSupport(v => ({...v, title: e.target.value}))} placeholder="Short issue summary" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ticket-client">Client *</Label>
+                  <Select value={editTicketSupport.client} onValueChange={(val) => setEditTicketSupport(v => ({...v, client: val}))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select client" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clients.filter(c => c !== "All Clients").sort().map(c => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Assignees *</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {TEAM_MEMBERS.map(m => (
+                      <label key={m.name} className="flex items-center space-x-2 p-2 rounded bg-background/50">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded"
+                          checked={Array.isArray(editTicketSupport.assignees) ? editTicketSupport.assignees.includes(m.name) : false}
+                          onChange={(e) => {
+                            const current = Array.isArray(editTicketSupport.assignees) ? editTicketSupport.assignees : [];
+                            const updated = e.target.checked ? [...current, m.name] : current.filter(n => n !== m.name);
+                            setEditTicketSupport(v => ({...v, assignees: updated}));
+                          }}
+                        />
+                        <span className="text-sm">{m.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ticket-priority">Priority</Label>
+                  <Select value={editTicketSupport.priority} onValueChange={(val) => setEditTicketSupport(v => ({...v, priority: val}))}>
+                    <SelectTrigger className={editTicketSupport.priority ? getSupportPriorityColor(editTicketSupport.priority) + " bg-opacity-20" : ""}>
+                      <SelectValue placeholder="Select priority" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="urgent" className={getSupportPriorityColor('urgent') + ' hover:opacity-90'}>Urgent</SelectItem>
+                      <SelectItem value="high" className={getSupportPriorityColor('high') + ' hover:opacity-90'}>High</SelectItem>
+                      <SelectItem value="medium" className={getSupportPriorityColor('medium') + ' hover:opacity-90'}>Medium</SelectItem>
+                      <SelectItem value="low" className={getSupportPriorityColor('low') + ' hover:opacity-90'}>Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-ticket-category">Category</Label>
+                  <Select value={editTicketSupport.category} onValueChange={(val) => setEditTicketSupport(v => ({...v, category: val}))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Bug">Bug</SelectItem>
+                      <SelectItem value="Question">Question</SelectItem>
+                      <SelectItem value="Feature">Feature</SelectItem>
+                      <SelectItem value="Training">Training</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-ticket-description">Description</Label>
+                <Textarea id="edit-ticket-description" rows={4} value={editTicketSupport.description} onChange={(e) => setEditTicketSupport(v => ({...v, description: e.target.value}))} placeholder="Describe the issue..." />
+              </div>
+              <div className="flex items-center space-x-2 pt-2">
+                <input id="edit-ticket-premium" type="checkbox" className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 rounded" checked={editTicketSupport.premium} onChange={(e) => setEditTicketSupport(v => ({...v, premium: e.target.checked}))} />
+                <Label htmlFor="edit-ticket-premium">Premium</Label>
+              </div>
+            </div>
+          )}
+          <div className={`grid gap-6 py-4 ${user?.department === 'Support' && (selectedActivity?.isTicket || editActivity?.ticketType) ? 'hidden' : ''}`}>
             {/* Activity Type & Category */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -1771,7 +1897,10 @@ export default function Activities() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateActivity} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleUpdateSupportTicket} className={`bg-blue-600 hover:bg-blue-700 ${user?.department === 'Support' && (selectedActivity?.isTicket || editActivity?.ticketType) ? '' : 'hidden'}`}>
+              Update Ticket
+            </Button>
+            <Button onClick={handleUpdateActivity} className={`bg-blue-600 hover:bg-blue-700 ${user?.department === 'Support' && (selectedActivity?.isTicket || editActivity?.ticketType) ? 'hidden' : ''}`}>
               Update Activity
             </Button>
           </DialogFooter>
