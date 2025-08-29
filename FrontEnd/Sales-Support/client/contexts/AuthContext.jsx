@@ -90,7 +90,7 @@ export const AuthProvider = ({ children }) => {
         department: "Support",
         avatar: "SA",
         bgColor: "from-pink-500 to-pink-600",
-        permissions: ["dashboard", "activities", "notifications", "support"],
+        permissions: ["dashboard", "activities", "notifications", "support", "reports"],
         isManager: false,
       },
     },
