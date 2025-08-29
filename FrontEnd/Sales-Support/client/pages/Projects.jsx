@@ -352,7 +352,7 @@ export default function Projects() {
       return;
     }
 
-    const id = (activities?.[0]?.id || 0) + activities.length + 1;
+    const id = Date.now();
     const newActivity = {
       id,
       activityType: activityForm.activityType,
@@ -373,14 +373,16 @@ export default function Projects() {
       ticketType: "Question",
       premiumSupport: false,
       priority: activityForm.priority,
-      projectId: addActivityFor.id,
       activityLog: [
         { user: activityForm.responsible, action: "Created", timestamp: new Date().toLocaleString() }
       ]
     };
 
-    const updatedActivities = [newActivity, ...activities];
-    saveActivities(updatedActivities);
+    const updatedProjects = projects.map(p => p.id === addActivityFor.id
+      ? { ...p, cardActivities: [ ...(p.cardActivities || []), newActivity ] }
+      : p
+    );
+    saveProjects(updatedProjects);
     setAddActivityFor(null);
     setActivityForm({ activityType: "Call", date: new Date().toISOString().split('T')[0], time: new Date().toTimeString().slice(0,5), responsible: [], notes: "", status: "To Do", priority: "Medium" });
   };
