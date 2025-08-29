@@ -351,6 +351,8 @@ export default function Sales() {
   }, [organizations]);
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editLead, setEditLead] = useState(null);
 
   // ------- New lead form -------
   const [newLead, setNewLead] = useState({
