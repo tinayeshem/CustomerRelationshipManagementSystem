@@ -11,8 +11,10 @@ import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import CEODashboard from "./pages/CEODashboard";
 import Teams from "./pages/Teams";
 import Activities from "./pages/Activities";
+import TimelinePage from "./pages/Timeline";
 import Organization from "./pages/Organization";
 import Reports from "./pages/Reports";
 import Projects from "./pages/Projects";
@@ -21,6 +23,7 @@ import Support from "./pages/Support";
 import Sales from "./pages/Sales";
 import NotFound from "./pages/NotFound";
 import Notifications from "./pages/Notifications";
+import AccountSettings from "./pages/AccountSettings";
 
 const queryClient = new QueryClient();
 
@@ -35,7 +38,7 @@ const AuthenticatedApp = () => {
           path="/"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              {user?.isCEO && !user?.isSimulating ? <CEODashboard /> : <Dashboard />}
             </ProtectedRoute>
           }
         />
@@ -44,6 +47,14 @@ const AuthenticatedApp = () => {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ceo-dashboard"
+          element={
+            <ProtectedRoute requiredPermission="ceo-dashboard">
+              <CEODashboard />
             </ProtectedRoute>
           }
         />
@@ -72,6 +83,14 @@ const AuthenticatedApp = () => {
           }
         />
         <Route
+          path="/activities/timeline"
+          element={
+            <ProtectedRoute>
+              <TimelinePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/organization"
           element={
             <ProtectedRoute>
@@ -85,7 +104,7 @@ const AuthenticatedApp = () => {
         <Route
           path="/projects"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute deniedDepartments={["Support"]}>
               <Projects />
             </ProtectedRoute>
           }
@@ -119,6 +138,14 @@ const AuthenticatedApp = () => {
           element={
             <ProtectedRoute requiredPermission="sales">
               <Sales />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/account"
+          element={
+            <ProtectedRoute>
+              <AccountSettings />
             </ProtectedRoute>
           }
         />

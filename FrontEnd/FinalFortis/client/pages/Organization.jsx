@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,14 +38,18 @@ import {
   Landmark,
   Globe,
   Database,
-  RefreshCw
+  RefreshCw,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
+import { TEAM_MEMBERS } from "@/constants/teamMembers";
+import { useAuth } from "@/contexts/AuthContext";
 
 const unitTypes = ["All Types", "Government", "Independent"];
 const organizationCategories = ["All Categories", "County", "Municipality", "City", "Sports Club", "SME", "Craftsmen", "Association"];
 const statuses = ["All Statuses", "Active", "Expired", "Potential", "Client", "Former Client", "Negotiation in Progress", "Not Contacted", "Rejected"];
-const phases = ["All Phases", "Initial Contact", "Proposal", "Negotiation", "Contract", "Active", "Renewal", "Terminated"];
-const nextPhases = ["All Next Phases", "Follow-up Call", "Proposal Submission", "Contract Signing", "Implementation", "Review Meeting", "Renewal Discussion"];
+const phases = ["All Phases", "New", "First contact", "interested", "Offer sent", "Accepted", "Contract signed", "implementation", "Declined"];
+const nextPhases = ["All Next Phases", "Reach Out", "Follow-up Call", "Proposal Submission", "Contract Signing", "Implementation", "Review Meeting", "Renewal Discussion"];
 const orgTeamMembers = ["Ana Marić", "Marko Petrović", "Petra Babić", "Luka Novak", "Sofia Antić"];
 
 const getStatusColor = (status) => {
@@ -65,13 +69,14 @@ const getStatusColor = (status) => {
 
 const getPhaseColor = (phase) => {
   switch (phase) {
-    case "Initial Contact": return "bg-blue-100 text-blue-800 border-blue-200";
-    case "Proposal": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "Negotiation": return "bg-orange-100 text-orange-800 border-orange-200";
-    case "Contract": return "bg-purple-100 text-purple-800 border-purple-200";
-    case "Active": return "bg-green-100 text-green-800 border-green-200";
-    case "Renewal": return "bg-blue-100 text-blue-800 border-blue-200";
-    case "Terminated": return "bg-red-100 text-red-800 border-red-200";
+    case "New": return "bg-gray-100 text-gray-800 border-gray-200";
+    case "First contact": return "bg-blue-100 text-blue-800 border-blue-200";
+    case "interested": return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    case "Offer sent": return "bg-cyan-100 text-cyan-800 border-cyan-200";
+    case "Accepted": return "bg-green-100 text-green-800 border-green-200";
+    case "Contract signed": return "bg-purple-100 text-purple-800 border-purple-200";
+    case "implementation": return "bg-teal-100 text-teal-800 border-teal-200";
+    case "Declined": return "bg-red-100 text-red-800 border-red-200";
     default: return "bg-gray-100 text-gray-800 border-gray-200";
   }
 };
@@ -125,6 +130,17 @@ const handleOpenMaps = (address) => {
 };
 
 export default function Organization() {
+  const { user, getAllUsers } = useAuth();
+  const teamDirectory = useMemo(() => {
+    const dept = user?.department;
+    try {
+      const list = (getAllUsers?.() || [])
+        .filter((u) => u?.department === dept && !u?.isCEO)
+        .map((u) => u.name);
+      if (list.length) return list;
+    } catch {}
+    return TEAM_MEMBERS.filter((m) => m.department === dept).map((m) => m.name);
+  }, [user?.department, getAllUsers]);
   const [organizations, setOrganizations] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUnitType, setSelectedUnitType] = useState("All Types");
@@ -137,6 +153,7 @@ export default function Organization() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isMigrationInProgress, setIsMigrationInProgress] = useState(false);
   const [migrationSummary, setMigrationSummary] = useState(null);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
 
   // Form state for new organization
   const [formData, setFormData] = useState({
@@ -153,11 +170,15 @@ export default function Organization() {
     fax: "",
     email: "",
     websites: "",
+    contactPersons: [
+      { firstName: "", surname: "", role: "", phone: "", email: "" }
+    ],
     contactFirstName: "",
     contactSurname: "",
     contactRole: "",
     contactPhone: "",
     responsibleMembers: [],
+    premiumSupport: false,
     // Legacy fields for migration compatibility
     category: "",
     notes: ""
@@ -179,11 +200,15 @@ export default function Organization() {
     fax: "",
     email: "",
     websites: "",
+    contactPersons: [
+      { firstName: "", surname: "", role: "", phone: "", email: "" }
+    ],
     contactFirstName: "",
     contactSurname: "",
     contactRole: "",
     contactPhone: "",
     responsibleMembers: [],
+    premiumSupport: false,
     category: "",
     notes: ""
   });
@@ -281,6 +306,26 @@ export default function Organization() {
       else if (formData.city) category = "City";
     }
 
+    const contactsArr = Array.isArray(formData.contactPersons)
+      ? formData.contactPersons
+          .map(c => ({
+            firstName: c.firstName?.trim() || "",
+            surname: c.surname?.trim() || "",
+            role: c.role?.trim() || "",
+            phone: c.phone?.trim() || "",
+            email: c.email?.trim() || "",
+          }))
+          .filter(c => c.firstName || c.surname || c.phone || c.email)
+      : [];
+    const legacyPrimary = {
+      firstName: formData.contactFirstName?.trim() || "",
+      surname: formData.contactSurname?.trim() || "",
+      role: formData.contactRole?.trim() || "",
+      phone: formData.contactPhone?.trim() || "",
+      email: "",
+    };
+    const primaryContact = contactsArr[0] || legacyPrimary;
+
     const newOrganization = {
       id: organizations.length + 1,
       organizationName: formData.organizationName,
@@ -290,7 +335,7 @@ export default function Organization() {
       municipality: formData.municipality,
       city: formData.city,
       status: formData.status,
-      phase: formData.phase || "Initial Contact",
+      phase: formData.phase || "First contact",
       nextPhase: formData.nextPhase,
       address: formData.address,
       phone: formData.phone,
@@ -298,13 +343,15 @@ export default function Organization() {
       email: formData.email,
       websites: formData.websites.split(',').map(w => w.trim()).filter(w => w),
       contactPerson: {
-        firstName: formData.contactFirstName,
-        surname: formData.contactSurname,
-        role: formData.contactRole,
-        phone: formData.contactPhone
+        firstName: primaryContact.firstName,
+        surname: primaryContact.surname,
+        role: primaryContact.role,
+        phone: primaryContact.phone
       },
+      contactPersons: contactsArr,
       responsibleMembers: formData.responsibleMembers,
       notes: formData.notes,
+      premiumSupport: !!formData.premiumSupport,
       createdDate: new Date().toISOString().split('T')[0],
       lastUpdated: new Date().toISOString().split('T')[0]
     };
@@ -313,6 +360,51 @@ export default function Organization() {
     setOrganizations(updatedOrganizations);
     localStorage.setItem('organizationData', JSON.stringify(updatedOrganizations));
     window.dispatchEvent(new Event('organizationDataUpdated'));
+
+    // Upsert matching sales lead ONLY for active phases
+    try {
+      const active = ["first contact","interested","offer sent","accepted","contract signed","implementation"];
+      const phaseKey = String(newOrganization.phase || "").toLowerCase();
+      if (active.includes(phaseKey)) {
+        const leadId = `LEAD-ORG-${newOrganization.id}`;
+        const savedLeads = localStorage.getItem('sales_leads');
+        const leads = savedLeads ? JSON.parse(savedLeads) : [];
+        const idx = Array.isArray(leads) ? leads.findIndex(l => l.id === leadId) : -1;
+        const contactName = [newOrganization.contactPerson.firstName, newOrganization.contactPerson.surname].filter(Boolean).join(' ');
+        const contact = contactName || '';
+        const contacts = contact ? [{ name: contact, role: newOrganization.contactPerson.role || 'Primary', phone: newOrganization.contactPerson.phone || newOrganization.phone || '', email: newOrganization.email || '' }] : [];
+        const stage = newOrganization.phase;
+        const baseLead = {
+          id: leadId,
+          name: newOrganization.organizationName,
+          contacts,
+          contact,
+          phone: newOrganization.phone || contacts[0]?.phone || '',
+          email: newOrganization.email || contacts[0]?.email || '',
+          value: 0,
+          probability: 10,
+          stage,
+          source: 'Organization',
+          region: newOrganization.region || '',
+          product: '',
+          assignee: '',
+          team: Array.isArray(newOrganization.responsibleMembers) ? newOrganization.responsibleMembers : [],
+          created: new Date().toISOString().split('T')[0],
+          nextAction: '',
+          status: 'Cold',
+          timeSpent: 0,
+          lastActivity: new Date().toISOString().split('T')[0]
+        };
+        if (idx === -1) {
+          localStorage.setItem('sales_leads', JSON.stringify([baseLead, ...leads]));
+        } else {
+          leads[idx] = { ...baseLead, ...leads[idx], name: baseLead.name, stage: baseLead.stage, team: baseLead.team, contacts: baseLead.contacts, contact: baseLead.contact, phone: baseLead.phone, email: baseLead.email };
+          localStorage.setItem('sales_leads', JSON.stringify(leads));
+        }
+        window.dispatchEvent(new Event('salesLeadsUpdated'));
+      }
+    } catch {}
+
     setIsAddDialogOpen(false);
 
     // Reset form
@@ -330,11 +422,13 @@ export default function Organization() {
       fax: "",
       email: "",
       websites: "",
+      contactPersons: [{ firstName: "", surname: "", role: "", phone: "", email: "" }],
       contactFirstName: "",
       contactSurname: "",
       contactRole: "",
       contactPhone: "",
       category: "",
+      premiumSupport: false,
       notes: ""
     });
   };
@@ -345,6 +439,24 @@ export default function Organization() {
   };
 
   const handleEditOrganization = (org) => {
+    const contacts = Array.isArray(org.contactPersons)
+      ? org.contactPersons.map(c => ({
+          firstName: c.firstName || "",
+          surname: c.surname || "",
+          role: c.role || "",
+          phone: c.phone || "",
+          email: c.email || "",
+        }))
+      : org.contactPerson
+        ? [{
+            firstName: org.contactPerson.firstName || "",
+            surname: org.contactPerson.surname || "",
+            role: org.contactPerson.role || "",
+            phone: org.contactPerson.phone || "",
+            email: org.email || "",
+          }]
+        : [{ firstName: "", surname: "", role: "", phone: "", email: "" }];
+    const primary = contacts[0] || { firstName: "", surname: "", role: "", phone: "" };
     setEditFormData({
       id: org.id,
       organizationName: org.organizationName,
@@ -360,12 +472,14 @@ export default function Organization() {
       fax: org.fax || "",
       email: org.email || "",
       websites: org.websites?.join(", ") || "",
-      contactFirstName: org.contactPerson?.firstName || "",
-      contactSurname: org.contactPerson?.surname || "",
-      contactRole: org.contactPerson?.role || "",
-      contactPhone: org.contactPerson?.phone || "",
+      contactPersons: contacts,
+      contactFirstName: primary.firstName || "",
+      contactSurname: primary.surname || "",
+      contactRole: primary.role || "",
+      contactPhone: primary.phone || "",
       category: org.category,
       responsibleMembers: org.responsibleMembers || [],
+      premiumSupport: !!org.premiumSupport,
       notes: org.notes || ""
     });
     setIsEditDialogOpen(true);
@@ -385,6 +499,26 @@ export default function Organization() {
       else if (editFormData.city) category = "City";
     }
 
+    const contactsArr = Array.isArray(editFormData.contactPersons)
+      ? editFormData.contactPersons
+          .map(c => ({
+            firstName: c.firstName?.trim() || "",
+            surname: c.surname?.trim() || "",
+            role: c.role?.trim() || "",
+            phone: c.phone?.trim() || "",
+            email: c.email?.trim() || "",
+          }))
+          .filter(c => c.firstName || c.surname || c.phone || c.email)
+      : [];
+    const legacyPrimary = {
+      firstName: editFormData.contactFirstName?.trim() || "",
+      surname: editFormData.contactSurname?.trim() || "",
+      role: editFormData.contactRole?.trim() || "",
+      phone: editFormData.contactPhone?.trim() || "",
+      email: "",
+    };
+    const primaryContact = contactsArr[0] || legacyPrimary;
+
     const updatedOrganization = {
       ...organizations.find(o => o.id === editFormData.id),
       organizationName: editFormData.organizationName,
@@ -402,12 +536,14 @@ export default function Organization() {
       email: editFormData.email,
       websites: editFormData.websites.split(',').map(w => w.trim()).filter(w => w),
       contactPerson: {
-        firstName: editFormData.contactFirstName,
-        surname: editFormData.contactSurname,
-        role: editFormData.contactRole,
-        phone: editFormData.contactPhone
+        firstName: primaryContact.firstName,
+        surname: primaryContact.surname,
+        role: primaryContact.role,
+        phone: primaryContact.phone
       },
+      contactPersons: contactsArr,
       responsibleMembers: editFormData.responsibleMembers,
+      premiumSupport: !!editFormData.premiumSupport,
       notes: editFormData.notes,
       lastUpdated: new Date().toISOString().split('T')[0]
     };
@@ -418,6 +554,43 @@ export default function Organization() {
     setOrganizations(updatedOrganizations);
     localStorage.setItem('organizationData', JSON.stringify(updatedOrganizations));
     window.dispatchEvent(new Event('organizationDataUpdated'));
+
+    // Sync corresponding sales lead: add/update for active phases, remove otherwise
+    try {
+      const active = ["first contact","interested","offer sent","accepted","contract signed","implementation"];
+      const phaseKey = String(updatedOrganization.phase || "").toLowerCase();
+      const leadId = `LEAD-ORG-${updatedOrganization.id}`;
+      const savedLeads = localStorage.getItem('sales_leads');
+      const leads = savedLeads ? JSON.parse(savedLeads) : [];
+      const idx = Array.isArray(leads) ? leads.findIndex(l => l.id === leadId) : -1;
+      if (active.includes(phaseKey)) {
+        const contactName = [updatedOrganization.contactPerson.firstName, updatedOrganization.contactPerson.surname].filter(Boolean).join(' ');
+        const contact = contactName || '';
+        const contacts = contact ? [{ name: contact, role: updatedOrganization.contactPerson.role || 'Primary', phone: updatedOrganization.contactPerson.phone || updatedOrganization.phone || '', email: updatedOrganization.email || '' }] : [];
+        const patch = {
+          id: leadId,
+          name: updatedOrganization.organizationName,
+          stage: updatedOrganization.phase,
+          team: Array.isArray(updatedOrganization.responsibleMembers) ? updatedOrganization.responsibleMembers : [],
+          contacts,
+          contact,
+          phone: updatedOrganization.phone || contacts[0]?.phone || '',
+          email: updatedOrganization.email || contacts[0]?.email || '',
+        };
+        if (idx === -1) {
+          localStorage.setItem('sales_leads', JSON.stringify([patch, ...leads]));
+        } else {
+          leads[idx] = { ...leads[idx], ...patch };
+          localStorage.setItem('sales_leads', JSON.stringify(leads));
+        }
+      } else {
+        if (idx !== -1) {
+          const next = leads.filter(l => l.id !== leadId);
+          localStorage.setItem('sales_leads', JSON.stringify(next));
+        }
+      }
+      window.dispatchEvent(new Event('salesLeadsUpdated'));
+    } catch {}
 
     // Strict sync: update linked projects to match new phase
     const savedProjects = localStorage.getItem('projectsData');
@@ -504,19 +677,36 @@ export default function Organization() {
               <Filter className="h-5 w-5" />
               <span>Advanced Organization Filters</span>
             </CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={resetFilters}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
-            >
-              <Filter className="h-4 w-4 mr-1" />
-              Reset Filters
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFiltersOpen((o) => !o)}
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                aria-expanded={isFiltersOpen}
+                aria-controls="org-filters-content"
+              >
+                {isFiltersOpen ? (
+                  <ChevronUp className="h-4 w-4 mr-1" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 mr-1" />
+                )}
+                {isFiltersOpen ? "Hide Filters" : "Show Filters"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetFilters}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300"
+              >
+                <Filter className="h-4 w-4 mr-1" />
+                Reset Filters
+              </Button>
+            </div>
           </div>
           <CardDescription>Filter and analyze your organization portfolio</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent id="org-filters-content" className={isFiltersOpen ? "space-y-4" : "hidden"}>
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-400" />
@@ -599,7 +789,7 @@ export default function Organization() {
             <p className="text-sm text-blue-600">
               Found {filteredData.length} organization{filteredData.length !== 1 ? 's' : ''}
             </p>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <Dialog open={isAddDialogOpen} onOpenChange={(open) => open && setIsAddDialogOpen(open)}>
               <DialogTrigger asChild>
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white">
                   <Plus className="h-4 w-4 mr-2" />
@@ -724,6 +914,17 @@ export default function Organization() {
                         </Select>
                       </div>
 
+                      <div className="flex items-center gap-2 col-span-2">
+                        <input
+                          id="premiumSupport"
+                          type="checkbox"
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                          checked={!!formData.premiumSupport}
+                          onChange={(e) => setFormData({ ...formData, premiumSupport: e.target.checked })}
+                        />
+                        <Label htmlFor="premiumSupport">Premium</Label>
+                      </div>
+
                       <div className="space-y-2">
                         <Label htmlFor="phase">Phase</Label>
                         <Select value={formData.phase} onValueChange={(value) => setFormData({...formData, phase: value})}>
@@ -755,7 +956,7 @@ export default function Organization() {
                       <div className="space-y-3 col-span-2">
                         <Label>Responsible Members</Label>
                         <div className="grid grid-cols-2 gap-3">
-                          {orgTeamMembers.map((member) => (
+                          {teamDirectory.map((member) => (
                             <div key={member} className="flex items-center space-x-2">
                               <input
                                 type="checkbox"
@@ -829,46 +1030,107 @@ export default function Organization() {
                     </div>
                   </div>
 
-                  {/* Contact Person Details */}
+                  {/* Contact Persons */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-blue-800">Contact Person Details</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="contactFirstName">First Name</Label>
-                        <Input
-                          id="contactFirstName"
-                          value={formData.contactFirstName}
-                          onChange={(e) => setFormData({...formData, contactFirstName: e.target.value})}
-                          placeholder="Enter first name"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="contactSurname">Surname</Label>
-                        <Input
-                          id="contactSurname"
-                          value={formData.contactSurname}
-                          onChange={(e) => setFormData({...formData, contactSurname: e.target.value})}
-                          placeholder="Enter surname"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="contactRole">Role</Label>
-                        <Input
-                          id="contactRole"
-                          value={formData.contactRole}
-                          onChange={(e) => setFormData({...formData, contactRole: e.target.value})}
-                          placeholder="Enter role/position"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="contactPhone">Phone Number</Label>
-                        <Input
-                          id="contactPhone"
-                          value={formData.contactPhone}
-                          onChange={(e) => setFormData({...formData, contactPhone: e.target.value})}
-                          placeholder="Enter contact phone number"
-                        />
-                      </div>
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-blue-800">Contact Persons</h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                        onClick={() => setFormData({
+                          ...formData,
+                          contactPersons: [...(formData.contactPersons || []), { firstName: "", surname: "", role: "", phone: "", email: "" }]
+                        })}
+                      >
+                        Add Contact
+                      </Button>
+                    </div>
+                    <div className="space-y-4">
+                      {(formData.contactPersons || []).map((c, idx) => (
+                        <Card key={idx} className="p-4 border-blue-100">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="text-sm font-medium text-blue-800">Contact #{idx + 1}</span>
+                            {idx > 0 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => {
+                                  const next = [...(formData.contactPersons || [])];
+                                  next.splice(idx, 1);
+                                  setFormData({ ...formData, contactPersons: next });
+                                }}
+                              >
+                                Remove
+                              </Button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>First Name</Label>
+                              <Input
+                                value={c.firstName}
+                                onChange={(e) => {
+                                  const next = [...(formData.contactPersons || [])];
+                                  next[idx] = { ...next[idx], firstName: e.target.value };
+                                  setFormData({ ...formData, contactPersons: next });
+                                }}
+                                placeholder="First name"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Surname</Label>
+                              <Input
+                                value={c.surname}
+                                onChange={(e) => {
+                                  const next = [...(formData.contactPersons || [])];
+                                  next[idx] = { ...next[idx], surname: e.target.value };
+                                  setFormData({ ...formData, contactPersons: next });
+                                }}
+                                placeholder="Surname"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Role</Label>
+                              <Input
+                                value={c.role}
+                                onChange={(e) => {
+                                  const next = [...(formData.contactPersons || [])];
+                                  next[idx] = { ...next[idx], role: e.target.value };
+                                  setFormData({ ...formData, contactPersons: next });
+                                }}
+                                placeholder="Role/position"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Phone</Label>
+                              <Input
+                                value={c.phone}
+                                onChange={(e) => {
+                                  const next = [...(formData.contactPersons || [])];
+                                  next[idx] = { ...next[idx], phone: e.target.value };
+                                  setFormData({ ...formData, contactPersons: next });
+                                }}
+                                placeholder="Phone number"
+                              />
+                            </div>
+                            <div className="space-y-2 md:col-span-2">
+                              <Label>Email</Label>
+                              <Input
+                                type="email"
+                                value={c.email}
+                                onChange={(e) => {
+                                  const next = [...(formData.contactPersons || [])];
+                                  next[idx] = { ...next[idx], email: e.target.value };
+                                  setFormData({ ...formData, contactPersons: next });
+                                }}
+                                placeholder="Email address"
+                              />
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
                     </div>
                   </div>
 
@@ -922,6 +1184,9 @@ export default function Organization() {
                       <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
                         {org.unitType}
                       </Badge>
+                      {org.premiumSupport && (
+                        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Premium</Badge>
+                      )}
                     </div>
                     
                     <p className="text-sm text-muted-foreground mb-3">{org.notes}</p>
@@ -1056,30 +1321,12 @@ export default function Organization() {
           {selectedOrganization && (
             <div className="space-y-6">
               {/* Status Overview */}
-              <div className="grid grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="flex justify-start">
+                <div className="p-4 bg-blue-50 rounded-lg text-left w-fit">
                   <Badge variant="outline" className={getStatusColor(selectedOrganization.status)}>
                     {selectedOrganization.status}
                   </Badge>
                   <p className="text-xs text-gray-600 mt-1">Status</p>
-                </div>
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <Badge variant="outline" className={getPhaseColor(selectedOrganization.phase)}>
-                    {selectedOrganization.phase || 'Not Set'}
-                  </Badge>
-                  <p className="text-xs text-gray-600 mt-1">Current Phase</p>
-                </div>
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
-                    {selectedOrganization.unitType}
-                  </Badge>
-                  <p className="text-xs text-gray-600 mt-1">Unit Type</p>
-                </div>
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <Badge variant="outline" className="bg-gray-100 text-gray-800 border-gray-200">
-                    {selectedOrganization.category}
-                  </Badge>
-                  <p className="text-xs text-gray-600 mt-1">Category</p>
                 </div>
               </div>
 
@@ -1354,6 +1601,16 @@ export default function Organization() {
                   </div>
                 )}
 
+                <div className="flex items-center gap-2">
+                  <input
+                    id="edit-premiumSupport"
+                    type="checkbox"
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    checked={!!editFormData.premiumSupport}
+                    onChange={(e) => setEditFormData({ ...editFormData, premiumSupport: e.target.checked })}
+                  />
+                  <Label htmlFor="edit-premiumSupport">Premium</Label>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="edit-status">Status</Label>
                   <Select value={editFormData.status} onValueChange={(value) => setEditFormData({...editFormData, status: value})}>
@@ -1473,46 +1730,107 @@ export default function Organization() {
               </div>
             </div>
 
-            {/* Contact Person Details */}
+            {/* Contact Persons */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-blue-800">Contact Person Details</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-contactFirstName">First Name</Label>
-                  <Input
-                    id="edit-contactFirstName"
-                    value={editFormData.contactFirstName}
-                    onChange={(e) => setEditFormData({...editFormData, contactFirstName: e.target.value})}
-                    placeholder="Enter first name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-contactSurname">Surname</Label>
-                  <Input
-                    id="edit-contactSurname"
-                    value={editFormData.contactSurname}
-                    onChange={(e) => setEditFormData({...editFormData, contactSurname: e.target.value})}
-                    placeholder="Enter surname"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-contactRole">Role</Label>
-                  <Input
-                    id="edit-contactRole"
-                    value={editFormData.contactRole}
-                    onChange={(e) => setEditFormData({...editFormData, contactRole: e.target.value})}
-                    placeholder="Enter role/position"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="edit-contactPhone">Phone Number</Label>
-                  <Input
-                    id="edit-contactPhone"
-                    value={editFormData.contactPhone}
-                    onChange={(e) => setEditFormData({...editFormData, contactPhone: e.target.value})}
-                    placeholder="Enter contact phone number"
-                  />
-                </div>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-blue-800">Contact Persons</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                  onClick={() => setEditFormData({
+                    ...editFormData,
+                    contactPersons: [...(editFormData.contactPersons || []), { firstName: "", surname: "", role: "", phone: "", email: "" }]
+                  })}
+                >
+                  Add Contact
+                </Button>
+              </div>
+              <div className="space-y-4">
+                {(editFormData.contactPersons || []).map((c, idx) => (
+                  <Card key={idx} className="p-4 border-blue-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-sm font-medium text-blue-800">Contact #{idx + 1}</span>
+                      {idx > 0 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="text-red-600 hover:text-red-700"
+                          onClick={() => {
+                            const next = [...(editFormData.contactPersons || [])];
+                            next.splice(idx, 1);
+                            setEditFormData({ ...editFormData, contactPersons: next });
+                          }}
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>First Name</Label>
+                        <Input
+                          value={c.firstName}
+                          onChange={(e) => {
+                            const next = [...(editFormData.contactPersons || [])];
+                            next[idx] = { ...next[idx], firstName: e.target.value };
+                            setEditFormData({ ...editFormData, contactPersons: next });
+                          }}
+                          placeholder="First name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Surname</Label>
+                        <Input
+                          value={c.surname}
+                          onChange={(e) => {
+                            const next = [...(editFormData.contactPersons || [])];
+                            next[idx] = { ...next[idx], surname: e.target.value };
+                            setEditFormData({ ...editFormData, contactPersons: next });
+                          }}
+                          placeholder="Surname"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Role</Label>
+                        <Input
+                          value={c.role}
+                          onChange={(e) => {
+                            const next = [...(editFormData.contactPersons || [])];
+                            next[idx] = { ...next[idx], role: e.target.value };
+                            setEditFormData({ ...editFormData, contactPersons: next });
+                          }}
+                          placeholder="Role/position"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Phone</Label>
+                        <Input
+                          value={c.phone}
+                          onChange={(e) => {
+                            const next = [...(editFormData.contactPersons || [])];
+                            next[idx] = { ...next[idx], phone: e.target.value };
+                            setEditFormData({ ...editFormData, contactPersons: next });
+                          }}
+                          placeholder="Phone number"
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label>Email</Label>
+                        <Input
+                          type="email"
+                          value={c.email}
+                          onChange={(e) => {
+                            const next = [...(editFormData.contactPersons || [])];
+                            next[idx] = { ...next[idx], email: e.target.value };
+                            setEditFormData({ ...editFormData, contactPersons: next });
+                          }}
+                          placeholder="Email address"
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                ))}
               </div>
             </div>
 

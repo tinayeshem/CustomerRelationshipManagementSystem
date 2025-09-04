@@ -14,9 +14,34 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [originalCEOUser, setOriginalCEOUser] = useState(null); // Store original CEO user for returning
 
   // Pre-defined accounts for existing team members
   const predefinedAccounts = {
+    "ceo@4ssystem.hr": {
+      password: "CEO2024!",
+      user: {
+        id: 100,
+        name: "CEO Demo",
+        email: "ceo@4ssystem.hr",
+        role: "Chief Executive Officer",
+        department: "CEO",
+        avatar: "CEO",
+        bgColor: "from-gold-500 to-gold-600",
+        permissions: [
+          "dashboard",
+          "clients",
+          "activities",
+          "reports",
+          "team-management",
+          "sales",
+          "support",
+          "ceo-dashboard",
+        ],
+        isManager: true,
+        isCEO: true,
+      },
+    },
     "ana.maric@4ssystem.hr": {
       password: "AnaMaric2024!",
       user: {
@@ -135,6 +160,12 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: "Email and password are required" };
       }
 
+      // Block deleted accounts
+      const deleted = JSON.parse(localStorage.getItem("4s_deleted_emails") || "[]");
+      if (Array.isArray(deleted) && deleted.includes(email.toLowerCase())) {
+        return { success: false, error: "This account has been deleted" };
+      }
+
       // Check predefined accounts first
       const predefinedAccount = predefinedAccounts[email.toLowerCase()];
       if (predefinedAccount && predefinedAccount.password === password) {
@@ -224,16 +255,29 @@ export const AuthProvider = ({ children }) => {
           ? nameParts[0][0] + nameParts[nameParts.length - 1][0]
           : nameParts[0][0] + (nameParts[0][1] || "");
 
+      const isCEO = userData.role === "CEO";
       const newUser = {
         id: Date.now(),
         name: userData.name,
         email: userData.email,
         role: userData.role || "Team Member",
-        department: userData.department || "General",
+        department: isCEO ? "CEO" : userData.department || "General",
         avatar: initials.toUpperCase(),
         bgColor: "from-gray-500 to-gray-600",
-        permissions: ["dashboard", "activities"], // Basic permissions for new users
-        isManager: false,
+        permissions: isCEO
+          ? [
+              "dashboard",
+              "clients",
+              "activities",
+              "reports",
+              "team-management",
+              "sales",
+              "support",
+              "ceo-dashboard",
+            ]
+          : ["dashboard", "activities"],
+        isManager: isCEO ? true : false,
+        isCEO: isCEO,
       };
 
       // Store new user
@@ -292,6 +336,115 @@ export const AuthProvider = ({ children }) => {
     return [...predefinedUsers, ...customUsers];
   };
 
+  // CEO Role Simulation Functions
+  const simulateSalesRole = () => {
+    if (!user?.isCEO) return;
+
+    // Store original CEO user if not already stored
+    if (!originalCEOUser) {
+      setOriginalCEOUser(user);
+    }
+
+    const salesSimulationUser = {
+      ...user,
+      department: "Sales",
+      role: "Sales Manager (Demo Mode)",
+      permissions: [
+        "dashboard",
+        "clients",
+        "activities",
+        "reports",
+        "sales",
+      ],
+      isSimulating: true,
+      simulatingRole: "Sales",
+    };
+
+    setUser(salesSimulationUser);
+    localStorage.setItem("4s_user", JSON.stringify(salesSimulationUser));
+  };
+
+  const simulateSupportRole = () => {
+    if (!user?.isCEO) return;
+
+    // Store original CEO user if not already stored
+    if (!originalCEOUser) {
+      setOriginalCEOUser(user);
+    }
+
+    const supportSimulationUser = {
+      ...user,
+      department: "Support",
+      role: "Support Specialist (Demo Mode)",
+      permissions: [
+        "dashboard",
+        "activities",
+        "notifications",
+        "support",
+        "reports",
+      ],
+      isSimulating: true,
+      simulatingRole: "Support",
+    };
+
+    setUser(supportSimulationUser);
+    localStorage.setItem("4s_user", JSON.stringify(supportSimulationUser));
+  };
+
+  const exitSimulation = () => {
+    if (!user?.isSimulating || !originalCEOUser) return;
+
+    setUser(originalCEOUser);
+    localStorage.setItem("4s_user", JSON.stringify(originalCEOUser));
+    setOriginalCEOUser(null);
+  };
+
+  const deleteAccount = async ({ confirmText, password }) => {
+    try {
+      if (!user) return { success: false, error: "Not authenticated" };
+      if (confirmText !== "DELETE") {
+        return { success: false, error: "Type DELETE to confirm" };
+      }
+
+      const email = (user.email || "").toLowerCase();
+
+      const predefined = predefinedAccounts[email];
+      if (predefined) {
+        if (predefined.password !== password) {
+          return { success: false, error: "Incorrect password" };
+        }
+        const deleted = JSON.parse(localStorage.getItem("4s_deleted_emails") || "[]");
+        if (!deleted.includes(email)) {
+          deleted.push(email);
+          localStorage.setItem("4s_deleted_emails", JSON.stringify(deleted));
+        }
+      } else {
+        const all = JSON.parse(localStorage.getItem("4s_users") || "[]");
+        const idx = all.findIndex(
+          (acc) => acc.email && acc.email.toLowerCase() === email
+        );
+        if (idx === -1) {
+          return { success: false, error: "User not found" };
+        }
+        if (all[idx].password !== password) {
+          return { success: false, error: "Incorrect password" };
+        }
+        all.splice(idx, 1);
+        localStorage.setItem("4s_users", JSON.stringify(all));
+      }
+
+      localStorage.removeItem("4s_token");
+      localStorage.removeItem("4s_user");
+      setUser(null);
+      setIsAuthenticated(false);
+
+      return { success: true };
+    } catch (e) {
+      console.error("Delete account error:", e);
+      return { success: false, error: "Failed to delete account" };
+    }
+  };
+
   const value = {
     user,
     isAuthenticated,
@@ -300,9 +453,13 @@ export const AuthProvider = ({ children }) => {
     signup,
     logout,
     updateUser,
+    deleteAccount,
     hasPermission,
     isManager,
     getAllUsers,
+    simulateSalesRole,
+    simulateSupportRole,
+    exitSimulation,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

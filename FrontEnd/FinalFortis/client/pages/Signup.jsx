@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TEAM_MEMBERS } from "@/constants/teamMembers";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,31 +50,32 @@ export default function Signup() {
   const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  // Auto-handle department when role is CEO
+  useEffect(() => {
+    if (formData.role === "CEO") {
+      if (formData.department !== "CEO") {
+        setFormData((prev) => ({ ...prev, department: "CEO" }));
+      }
+    } else if (formData.department === "CEO") {
+      setFormData((prev) => ({ ...prev, department: "" }));
+    }
+  }, [formData.role]);
+
   // Existing team members (read-only display)
   const existingTeamMembers = TEAM_MEMBERS;
 
   const roles = [
-    "Senior Sales Manager",
+    "CEO",
+    "Sales Manager",
     "Sales Representative",
-    "Sales Associate",
     "Junior Sales",
-    "Support Specialist",
     "Senior Support",
-    "Support Associate",
-    "Team Lead",
-    "Manager",
-    "Director",
+    "Support Specialist",
   ];
 
   const departments = [
     "Sales",
     "Support",
-    "Marketing",
-    "Operations",
-    "Management",
-    "IT",
-    "Finance",
-    "HR",
   ];
 
   const handleInputChange = (e) => {
@@ -327,7 +328,7 @@ export default function Signup() {
                           handleSelectChange("department", value)
                         }
                       >
-                        <SelectTrigger className="border-blue-200 focus:border-blue-600">
+                        <SelectTrigger className="border-blue-200 focus:border-blue-600" disabled={formData.role === "CEO"}>
                           <SelectValue placeholder="Select department" />
                         </SelectTrigger>
                         <SelectContent>

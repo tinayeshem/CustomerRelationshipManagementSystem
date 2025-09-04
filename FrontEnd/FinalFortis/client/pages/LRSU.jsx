@@ -30,7 +30,9 @@ import {
   Calendar,
   Clock,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
 // Sample LRSU data with urgency indicators
@@ -232,6 +234,7 @@ export default function LRSU() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
   const [lrsuList, setLrsuList] = useState(lrsuData.map(lrsu => ({ ...lrsu, isFavorite: false })));
 
   // Form state for new LRSU
@@ -419,13 +422,34 @@ export default function LRSU() {
       {/* Filters Section */}
       <Card className="border border-blue-200 bg-white shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-dark-blue">
-            <Filter className="h-5 w-5" />
-            <span>Advanced Filters</span>
-          </CardTitle>
-          <CardDescription>Filter and search through your LRSU database</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center space-x-2 text-dark-blue">
+                <Filter className="h-5 w-5" />
+                <span>Advanced Filters</span>
+              </CardTitle>
+              <CardDescription>Filter and search through your LRSU database</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFiltersOpen((o) => !o)}
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                aria-expanded={isFiltersOpen}
+                aria-controls="lrsu-filters-content"
+              >
+                {isFiltersOpen ? (
+                  <ChevronUp className="h-4 w-4 mr-1" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 mr-1" />
+                )}
+                {isFiltersOpen ? "Hide Filters" : "Show Filters"}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent id="lrsu-filters-content" className={isFiltersOpen ? "space-y-4" : "hidden"}>
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-400" />

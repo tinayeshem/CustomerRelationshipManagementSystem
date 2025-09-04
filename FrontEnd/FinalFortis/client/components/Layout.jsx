@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,9 @@ import {
   Shield,
   Menu,
   X,
+  Clock,
+  ArrowLeft,
+  Crown,
 } from "lucide-react";
 
 const navigation = [
@@ -28,17 +31,20 @@ const navigation = [
   { name: "Teams", href: "/teams", icon: Users },
   { name: "Notifications", href: "/notifications", icon: Bell },
   { name: "Activities", href: "/activities", icon: Activity },
+  { name: "Timeline", href: "/activities/timeline", icon: Clock },
   { name: "Organization", href: "/organization", icon: Building },
   { name: "Projects", href: "/projects", icon: FileText },
   { name: "Sales", href: "/sales", icon: TrendingUp },
   { name: "Support", href: "/support", icon: Settings },
   { name: "Reports", href: "/reports", icon: BarChart3 },
   { name: "AI Advisor", href: "/ai-advisor", icon: Bot },
+  { name: "Account Settings", href: "/account", icon: User },
 ];
 
 export default function Layout({ children }) {
   const location = useLocation();
-  const { user, logout, isManager } = useAuth();
+  const navigate = useNavigate();
+  const { user, logout, isManager, exitSimulation } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const toggleSidebar = () => {
@@ -66,7 +72,11 @@ export default function Layout({ children }) {
       </div>
 
       {/* Hamburger Menu Button */}
-      <div className="fixed top-4 left-4 z-50 lg:hidden">
+      <div className={cn(
+        "fixed top-4 z-[60]",
+        "left-4",
+        sidebarOpen ? "lg:left-72" : "lg:left-4"
+      )}>
         <Button
           onClick={toggleSidebar}
           variant="outline"
@@ -88,7 +98,7 @@ export default function Layout({ children }) {
       {/* Sidebar */}
       <div className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 bg-sidebar backdrop-blur-sm border-r border-sidebar-border shadow-xl transition-transform duration-300 ease-in-out",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        sidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="flex h-full flex-col">
           {/* Professional Logo */}
@@ -117,7 +127,8 @@ export default function Layout({ children }) {
               .filter((item) => {
                 if (!user) return true;
                 if (user.department === 'Support' && item.name === 'Sales') return false;
-                if (user.department === 'Support' && item.name === 'Activities') return false;
+                if (user.department === 'Support' && (item.name === 'Activities' || item.name === 'Timeline')) return false;
+                if (user.department === 'Support' && item.name === 'Projects') return false;
                 if (user.department === 'Sales' && item.name === 'Support') return false;
                 return true;
               })
@@ -173,6 +184,11 @@ export default function Layout({ children }) {
                     <p className="text-xs text-light-blue truncate">
                       {user.role}
                     </p>
+                    {user?.isSimulating && (
+                      <p className="text-xs text-yellow-600 font-medium truncate">
+                        Demo Mode: {user.simulatingRole}
+                      </p>
+                    )}
                     <div className="flex items-center space-x-1 mt-1">
                       <span
                         className={`inline-block px-2 py-1 text-xs rounded-full ${
@@ -195,15 +211,21 @@ export default function Layout({ children }) {
                   </div>
                 </div>
 
-                <Button
-                  onClick={logout}
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-3 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
+                {user?.isSimulating && (
+                  <Button
+                    onClick={() => {
+                      exitSimulation();
+                      navigate("/ceo-dashboard");
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="w-full mt-3 border-yellow-200 text-yellow-600 hover:bg-yellow-50 hover:text-yellow-700 hover:border-yellow-300"
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Exit Demo Mode
+                  </Button>
+                )}
+
               </div>
             )}
 
@@ -223,7 +245,11 @@ export default function Layout({ children }) {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64">
+      <div className={cn(
+        "transition-[padding] duration-300",
+        sidebarOpen ? "pl-64" : "pl-12",
+        sidebarOpen ? "lg:pl-64" : "lg:pl-12"
+      )}>
         <main className="min-h-screen pt-16 lg:pt-0">{children}</main>
       </div>
     </div>

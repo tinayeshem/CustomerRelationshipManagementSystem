@@ -32,7 +32,9 @@ import {
   AlertTriangle,
   CheckCircle,
   Phone,
-  Mail
+  Mail,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 
 // Enhanced client data with urgency indicators
@@ -279,6 +281,7 @@ export default function Clients() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(true);
   const [clientList, setClientList] = useState(clientData.map(client => ({ ...client, isFavorite: false })));
 
   // Form state for new client
@@ -510,13 +513,34 @@ export default function Clients() {
       {/* Filters Section */}
       <Card className="border border-blue-200 bg-white shadow-lg">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-blue-800">
-            <Filter className="h-5 w-5" />
-            <span>Advanced Client Filters</span>
-          </CardTitle>
-          <CardDescription>Filter and analyze your client portfolio</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center space-x-2 text-blue-800">
+                <Filter className="h-5 w-5" />
+                <span>Advanced Client Filters</span>
+              </CardTitle>
+              <CardDescription>Filter and analyze your client portfolio</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFiltersOpen((o) => !o)}
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                aria-expanded={isFiltersOpen}
+                aria-controls="client-filters-content"
+              >
+                {isFiltersOpen ? (
+                  <ChevronUp className="h-4 w-4 mr-1" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 mr-1" />
+                )}
+                {isFiltersOpen ? "Hide Filters" : "Show Filters"}
+              </Button>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent id="client-filters-content" className={isFiltersOpen ? "space-y-4" : "hidden"}>
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-400" />

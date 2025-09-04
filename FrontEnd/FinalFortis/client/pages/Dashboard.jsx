@@ -122,57 +122,138 @@ const allUpcomingTasks = [
   },
 ];
 
-
 export default function Dashboard() {
-  const { user } = useAuth();
-  const { teamActivityFeed, hasProjects, userProjects } = useTeamActivityFeed(3);
+  const { user, getAllUsers } = useAuth();
+  const { teamActivityFeed, hasProjects, userProjects } =
+    useTeamActivityFeed(3);
 
   // Load activities to derive user's tickets
   const [activitiesList, setActivitiesList] = useState([]);
+  const [supportTickets, setSupportTickets] = useState([]);
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('activitiesList');
+      const saved = localStorage.getItem("activitiesList");
       setActivitiesList(saved ? JSON.parse(saved) : []);
-    } catch { setActivitiesList([]); }
+    } catch {
+      setActivitiesList([]);
+    }
     const handler = () => {
       try {
-        const saved = localStorage.getItem('activitiesList');
+        const saved = localStorage.getItem("activitiesList");
         setActivitiesList(saved ? JSON.parse(saved) : []);
       } catch {}
     };
-    window.addEventListener('activitiesListUpdated', handler);
-    return () => window.removeEventListener('activitiesListUpdated', handler);
+    window.addEventListener("activitiesListUpdated", handler);
+    return () => window.removeEventListener("activitiesListUpdated", handler);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("supportTicketsList");
+      setSupportTickets(saved ? JSON.parse(saved) : []);
+    } catch {
+      setSupportTickets([]);
+    }
+    const handler = () => {
+      try {
+        const saved = localStorage.getItem("supportTicketsList");
+        setSupportTickets(saved ? JSON.parse(saved) : []);
+      } catch {}
+    };
+    window.addEventListener("supportTicketsUpdated", handler);
+    return () => window.removeEventListener("supportTicketsUpdated", handler);
   }, []);
 
   // Team recent activities: activities by teammates on your projects (excludes your own)
-  const recentTeamActivities = teamActivityFeed;
+  // For Support users, show recent tickets assigned to other support users (excluding the current user)
+  const recentTeamActivities = useMemo(() => {
+    if (user?.department !== "Support") return teamActivityFeed;
+
+    try {
+      const allUsers = typeof getAllUsers === "function" ? getAllUsers() : [];
+      const supportNames = new Set(
+        Array.isArray(allUsers)
+          ? allUsers.filter((u) => u?.department === "Support").map((u) => u.name)
+          : [],
+      );
+
+      const isAssignedToCurrentUser = (resp) => {
+        if (Array.isArray(resp)) return resp.includes(user?.name);
+        if (typeof resp === "string") return resp === (user?.name || "");
+        return false;
+      };
+
+      const parseTime = (x) => {
+        if (x?.deadline) return new Date(`${x.deadline}T23:59:59`).getTime();
+        const t = x?.time || "00:00";
+        const d = x?.date || "";
+        const dt = new Date(`${d}T${t}:00`).getTime();
+        return isNaN(dt) ? 0 : dt;
+      };
+
+      const base = user?.department === "Support" ? supportTickets : activitiesList;
+      const list = (Array.isArray(base) ? base : [])
+        .filter((a) => a?.isTicket || a?.ticketType)
+        // exclude tickets involving the current user
+        .filter((a) => !isAssignedToCurrentUser(a?.responsible))
+        // include only tickets assigned to support users
+        .filter((a) => {
+          const resp = a?.responsible;
+          if (Array.isArray(resp)) return resp.some((n) => supportNames.has(n));
+          if (typeof resp === "string") return supportNames.has(resp);
+          return false;
+        })
+        .sort((a, b) => parseTime(b) - parseTime(a))
+        .slice(0, 3)
+        .map((a) => ({
+          id: a.id,
+          client: a.linkedClient || "",
+          type: a.ticketType || "Ticket",
+          time: a.deadline
+            ? `Due: ${a.deadline}`
+            : `${a.date || ""}${a.time ? " • " + a.time : ""}`,
+          responsiblePerson: Array.isArray(a.responsible)
+            ? (a.responsible.find((n) => n !== user?.name) || a.responsible[0] || "")
+            : a.responsible || "",
+          status: (a.status || "To Do").toString().toLowerCase(),
+          icon: Settings,
+        }));
+
+      return list;
+    } catch {
+      return [];
+    }
+  }, [user?.department, user?.name, teamActivityFeed, activitiesList, supportTickets, getAllUsers]);
 
   // Upcoming tasks: current user's tickets
-  const upcomingTasks = (Array.isArray(activitiesList) ? activitiesList : [])
-    .filter(a => a?.isTicket || a?.ticketType)
-    .filter(a => {
+  const upcomingTasksBase = user?.department === "Support" ? supportTickets : activitiesList;
+  const upcomingTasks = (Array.isArray(upcomingTasksBase) ? upcomingTasksBase : [])
+    .filter((a) => a?.isTicket || a?.ticketType)
+    .filter((a) => {
       const resp = a?.responsible;
       if (Array.isArray(resp)) return resp.includes(user?.name);
-      if (typeof resp === 'string') return resp === (user?.name || '');
+      if (typeof resp === "string") return resp === (user?.name || "");
       return false;
     })
-    .sort((a,b) => {
+    .sort((a, b) => {
       const parse = (x) => {
         if (x?.deadline) return new Date(`${x.deadline}T23:59:59`).getTime();
-        const t = x?.time || '00:00';
-        const d = x?.date || '';
+        const t = x?.time || "00:00";
+        const d = x?.date || "";
         const dt = new Date(`${d}T${t}:00`).getTime();
         return isNaN(dt) ? 0 : dt;
       };
       return parse(a) - parse(b);
     })
     .slice(0, 3)
-    .map(a => ({
+    .map((a) => ({
       id: a.id,
-      title: a.notes || `${a.ticketType || 'Ticket'} - ${a.linkedClient || ''}`,
-      time: a.deadline ? `Due: ${a.deadline}` : `${a.date || ''}${a.time ? ' • ' + a.time : ''}`,
-      client: a.linkedClient || '',
-      priority: a.priority || 'Medium'
+      title: a.notes || `${a.ticketType || "Ticket"} - ${a.linkedClient || ""}`,
+      time: a.deadline
+        ? `Due: ${a.deadline}`
+        : `${a.date || ""}${a.time ? " • " + a.time : ""}`,
+      client: a.linkedClient || "",
+      priority: a.priority || "Medium",
     }));
 
   return (
@@ -223,63 +304,67 @@ export default function Dashboard() {
 
       {/* Super Cute Quick Stats */}
       {(() => {
-        const statsForUser = (user?.department === 'Support')
-          ? quickStats.filter(s => s.title !== 'Monthly Revenue')
-          : (user?.department === 'Sales')
-            ? quickStats.filter(s => s.title !== 'Open Tickets')
-            : quickStats;
-        const gridCols = statsForUser.length === 3
-          ? "grid-cols-1 md:grid-cols-3 lg:grid-cols-3"
-          : statsForUser.length === 2
-            ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-2"
-            : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
+        const statsForUser =
+          user?.department === "Support"
+            ? quickStats.filter((s) => s.title !== "Monthly Revenue")
+            : user?.department === "Sales"
+              ? quickStats.filter((s) => s.title !== "Open Tickets")
+              : quickStats;
+        const gridCols =
+          statsForUser.length === 3
+            ? "grid-cols-1 md:grid-cols-3 lg:grid-cols-3"
+            : statsForUser.length === 2
+              ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-2"
+              : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4";
         return (
           <div className={`grid ${gridCols} gap-6`}>
             {statsForUser.map((stat, index) => {
-          const Icon = stat.icon;
-          const colors = [
-            "from-purple-400 to-pink-400",
-            "from-pink-400 to-rose-400",
-            "from-blue-400 to-cyan-400",
-            "from-green-400 to-emerald-400",
-          ];
-          const bgColors = [
-            "from-purple-50 to-pink-50",
-            "from-pink-50 to-rose-50",
-            "from-blue-50 to-cyan-50",
-            "from-green-50 to-emerald-50",
-          ];
-          return (
-            <Card
-              key={index}
-              className={`border-2 border-purple-200 bg-gradient-to-br ${bgColors[index]} hover:shadow-xl transition-all duration-300 hover:scale-110 cursor-pointer transform hover:rotate-1`}
-            >
-              <CardContent className="p-6 text-center">
-                <div
-                  className={`w-16 h-16 rounded-full bg-gradient-to-br ${colors[index]} flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse`}
+              const Icon = stat.icon;
+              const colors = [
+                "from-purple-400 to-pink-400",
+                "from-pink-400 to-rose-400",
+                "from-blue-400 to-cyan-400",
+                "from-green-400 to-emerald-400",
+              ];
+              const bgColors = [
+                "from-purple-50 to-pink-50",
+                "from-pink-50 to-rose-50",
+                "from-blue-50 to-cyan-50",
+                "from-green-50 to-emerald-50",
+              ];
+              return (
+                <Card
+                  key={index}
+                  className={`border-2 border-purple-200 bg-gradient-to-br ${bgColors[index]} hover:shadow-xl transition-all duration-300 hover:scale-110 cursor-pointer transform hover:rotate-1`}
                 >
-                  <Icon className="h-8 w-8 text-white" />
-                </div>
-                <p className="text-sm font-medium text-gray-600 mb-1">
-                  {stat.title}
-                </p>
-                <p className="text-3xl font-bold text-gray-800 mb-2">
-                  {stat.value}
-                </p>
-                <div className="flex items-center justify-center space-x-1">
-                  <span
-                    className={`text-sm font-medium ${stat.changeType === "positive" ? "text-green-600" : "text-red-600"}`}
-                  >
-                    {stat.change}
-                  </span>
-                  <span className="text-lg">
-                    {stat.changeType === "positive" ? "📈" : "📉"}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">from last month 💕</p>
-              </CardContent>
-            </Card>
-          );
+                  <CardContent className="p-6 text-center">
+                    <div
+                      className={`w-16 h-16 rounded-full bg-gradient-to-br ${colors[index]} flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse`}
+                    >
+                      <Icon className="h-8 w-8 text-white" />
+                    </div>
+                    <p className="text-sm font-medium text-gray-600 mb-1">
+                      {stat.title}
+                    </p>
+                    <p className="text-3xl font-bold text-gray-800 mb-2">
+                      {stat.value}
+                    </p>
+                    <div className="flex items-center justify-center space-x-1">
+                      <span
+                        className={`text-sm font-medium ${stat.changeType === "positive" ? "text-green-600" : "text-red-600"}`}
+                      >
+                        {stat.change}
+                      </span>
+                      <span className="text-lg">
+                        {stat.changeType === "positive" ? "📈" : "📉"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      from last month 💕
+                    </p>
+                  </CardContent>
+                </Card>
+              );
             })}
           </div>
         );
@@ -292,13 +377,15 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center space-x-2">
                 <Activity className="h-5 w-5" />
-                <span>Team Recent Activities</span>
+                <span>{user?.department === "Support" ? "Team Recent Tickets" : "Team Recent Activities"}</span>
               </CardTitle>
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/projects">
-                  View All <ArrowRight className="h-4 w-4 ml-1" />
-                </Link>
-              </Button>
+              {user?.department !== 'Support' && (
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/projects">
+                    View All <ArrowRight className="h-4 w-4 ml-1" />
+                  </Link>
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -316,7 +403,7 @@ export default function Dashboard() {
                     <div className="flex-1">
                       <p className="font-medium text-sm">{activity.client}</p>
                       <p className="text-xs text-muted-foreground">
-                        {activity.type || 'Activity'} • {activity.time}
+                        {activity.type || "Activity"} • {activity.time}
                       </p>
                       <p className="text-xs text-blue-600 font-medium">
                         by {activity.responsiblePerson}
@@ -324,7 +411,9 @@ export default function Dashboard() {
                     </div>
                     <Badge
                       variant={
-                        activity.status === "completed" ? "default" : "secondary"
+                        activity.status === "completed"
+                          ? "default"
+                          : "secondary"
                       }
                       className="text-xs"
                     >
@@ -336,14 +425,15 @@ export default function Dashboard() {
             ) : (
               <div className="text-center py-8">
                 <Activity className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-sm mb-2">No team activities yet</p>
+                <p className="text-gray-500 text-sm mb-2">
+                  No team activities yet
+                </p>
                 <p className="text-xs text-gray-400">
                   {!hasProjects
                     ? "You're not assigned to any projects yet"
                     : userProjects.length > 0
                       ? "Your teammates haven't added activities for shared projects yet"
-                      : "Join a project to see team activities"
-                  }
+                      : "Join a project to see team activities"}
                 </p>
               </div>
             )}
@@ -359,7 +449,7 @@ export default function Dashboard() {
                 <span>Your Upcoming Tasks</span>
               </CardTitle>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/activities">
+                <Link to={user?.department === 'Support' ? '/support' : '/activities'}>
                   View All <ArrowRight className="h-4 w-4 ml-1" />
                 </Link>
               </Button>
@@ -398,7 +488,6 @@ export default function Dashboard() {
         </Card>
       </div>
 
-
       {/* Quick Actions */}
       <Card className="border-pastel-pink/30 bg-card/50 backdrop-blur-sm">
         <CardHeader>
@@ -413,9 +502,11 @@ export default function Dashboard() {
               asChild
               className="h-20 flex-col space-y-2 bg-gradient-to-br from-blue-100 to-blue-200 text-blue-800 hover:from-blue-200 hover:to-blue-300 border border-blue-200 shadow-md transition-all duration-300 hover:shadow-lg"
             >
-              <Link to="/activities">
+              <Link to={user?.department === "Support" ? "/support?register=1" : "/activities"}>
                 <Activity className="h-6 w-6" />
-                <span className="text-sm font-medium">New Activity</span>
+                <span className="text-sm font-medium">
+                  {user?.department === "Support" ? "New Ticket" : "New Activity"}
+                </span>
               </Link>
             </Button>
             <Button

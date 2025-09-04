@@ -154,6 +154,8 @@ const clientData = [
   }
 ];
 
+const NEW_PHASES = ["New","First contact","interested","Offer sent","Accepted","Contract signed","implementation","Declined"];
+
 // Sample data from LRSU dashboard (for migration reference)
 const lrsuData = [
   {
@@ -300,10 +302,10 @@ const migrateClientToOrganization = (client, index) => {
   if (client.status === "Expired") organizationStatus = "Former Client";
 
   // Determine phase based on status and contract info
-  let phase = "Initial Contact";
-  if (client.status === "Active") phase = "Active";
-  else if (client.status === "Potential") phase = "Negotiation";
-  else if (client.status === "Expired") phase = "Terminated";
+  let phase = "First contact";
+  if (client.status === "Active") phase = "implementation";
+  else if (client.status === "Potential") phase = "interested";
+  else if (client.status === "Expired") phase = "implementation";
 
   // Get primary contact person
   const primaryContact = client.contactPersons?.[0] || {};
@@ -320,7 +322,7 @@ const migrateClientToOrganization = (client, index) => {
     city: city,
     status: organizationStatus,
     phase: phase,
-    nextPhase: phase === "Active" ? "Renewal" : "Contract",
+    nextPhase: (() => { const idx = NEW_PHASES.indexOf(phase); return idx >= 0 && idx < NEW_PHASES.length - 1 ? NEW_PHASES[idx + 1] : ""; })(),
     address: client.address,
     phone: "", // Not available in client data
     fax: "",   // Not available in client data
@@ -364,12 +366,12 @@ const migrateLRSUToOrganization = (lrsu, index) => {
   }
 
   // Determine phase based on status
-  let phase = "Initial Contact";
-  if (lrsu.status === "Client") phase = "Active";
-  else if (lrsu.status === "Negotiation in Progress") phase = "Negotiation";
-  else if (lrsu.status === "Former Client") phase = "Terminated";
-  else if (lrsu.status === "Potential Client") phase = "Proposal";
-  else if (lrsu.status === "Not Contacted") phase = "Initial Contact";
+  let phase = "First contact";
+  if (lrsu.status === "Client") phase = "implementation";
+  else if (lrsu.status === "Negotiation in Progress") phase = "interested";
+  else if (lrsu.status === "Former Client") phase = "implementation";
+  else if (lrsu.status === "Potential Client") phase = "interested";
+  else if (lrsu.status === "Not Contacted") phase = "First contact";
 
   // Get primary contact person
   const primaryContact = lrsu.contactPersons?.[0] || {};
@@ -386,7 +388,7 @@ const migrateLRSUToOrganization = (lrsu, index) => {
     city: city,
     status: lrsu.status,
     phase: phase,
-    nextPhase: phase === "Active" ? "Renewal" : "Contract",
+    nextPhase: (() => { const idx = NEW_PHASES.indexOf(phase); return idx >= 0 && idx < NEW_PHASES.length - 1 ? NEW_PHASES[idx + 1] : ""; })(),
     address: lrsu.address,
     phone: "", // Not available in LRSU data
     fax: "",   // Not available in LRSU data
